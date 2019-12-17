@@ -7,7 +7,3 @@ price_data = pd.read_csv('DAA_RawPriceData_12.17.19.csv')
 # Monthly S&P returns -> month end dates
 
 # TODO 60 / 40
-
-
-
-
