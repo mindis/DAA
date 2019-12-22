@@ -1,4 +1,8 @@
 
+def get_last_business_day_of_month(df):
+    #TODO
+    pass
+
 def returns(df, horizon):
     """Calculates multiplicative returns of all series in a data frame"""
     return (df / df.shift(periods=horizon)) - 1    
