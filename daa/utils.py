@@ -47,6 +47,8 @@ class Exchange:
     
     def get_price(self, ticker, ds):
         time_bar = self.price_df.index == pd.to_datetime(ds.date())
+        if ticker not in self.price_df.columns:
+            raise KeyError("Try again: Ticker not found")
         price = float(self.price_df.loc[time_bar][ticker].values[0])
         print(price)
         return price
@@ -74,6 +76,12 @@ class Portfolio:
         if blotter_df.shape[0] > 0:
             positions_df = blotter_df.groupby(['ticker']).sum()['quantity'] 
         return positions_df
+    
+    def get_portfolio_weights(self):
+        positions = self.get_positions_df()
+        for position in len(positions)-1:
+            ticker = positions.index[position]
+            price = exchange.get_price(ticker, self.ds)
 
     def pass_time(self, units): # TODO: Assuming hours are always units
         for h in range(units):
@@ -82,8 +90,8 @@ class Portfolio:
             if self.ds.hour == 16: # Execute all orders when the market closes
                 while len(self.orders) > 0:
                     order = self.orders.pop()
-                    exchange = order[4]
                     ticker = order[0]
+                    exchange = order[4]                    
                     quantity = order[2]
                     side = order[1]
                     price = exchange.get_price(ticker, self.ds)
