@@ -6,8 +6,10 @@ from math import sqrt
 
 # equally weighted, user-defined weights, mean-variance optimization,
 # inverse variance portfolio (risk parity), hierarchical risk parity 
-CONSTRUCTION = ['EqualWeight','CustomWeight', 'MVO', 'IVP', 'HRP']
+NAME = ['EqualWeight','CustomWeight', 'MVO', 'IVP', 'HRP']
 REBALANCE = ['Limit','TripleBarrier', 'Monthly', 'Quarterly', 'Annual']
+LOOKBACK = ['1YR', '2YR', '3YR', '5YR', '10YR']
+
 
 def send_four():
     return 4
@@ -54,10 +56,10 @@ class Exchange:
         return price
 
 class Portfolio:
-    def __init__(self, start_ds, exchange):
-        self.id = 1
+    def __init__(self, start_ds, exchange, cash, ID):
+        self.id = ID
         self.ds = pd.to_datetime(start_ds)
-        self.cash_balance = 0
+        self.cash_balance = cash
         self.orders = []
         self.trade_id = 0
         self.exchange = exchange
@@ -134,15 +136,15 @@ class Portfolio:
     def place_order(self, ticker, side, quantity, order_type, exchange):
         self.orders.append((ticker, side, quantity, order_type, exchange))
     
-class Strategy:
+class Backtest:
     
-    def __init__(self, prices, positions, strategy, num_assets, ID):
+    def __init__(self, exchange, portfolio, strategy, dates):
         
         """Main class to calculate trades based on strategy rules.
         
         Parameters
         ----------
-        prices: pandas.DataFrame
+        exchange: object containing dates and prices
             Matrix of prices. 
         potions: pandas.Series
             Matrix of positions.
@@ -151,36 +153,59 @@ class Strategy:
             and 'allocation' (weighting scheme).
         num_assets: int
             Number of assets in modeled portfolio
+        dates: DatetimeIndex
+            index of user-defined dates for the backtest
         """
-        self.id = ID # Customer unique ID
-        self.N = num_assets 
-        
+        self.id = portfolio.ID # Customer unique ID  
+        self.dates = dates
+        self.start_dt = self.dates.min()
+        self.end_dt = self.dates.max()
+
         # Dataframe of asset prices with date index
-        if not isinstance(prices, pd.DataFrame):
-            raise ValueError("The passed matrix is not a pandas.DataFrame!")
+        self.price_df = exchange.get_price_df() 
+        if not isinstance(self.price_df, pd.DataFrame):
+            raise ValueError("The passed matrix is not a pandas.DataFrame.")
         else:
-            if not isinstance(prices.index, pd.DatetimeIndex):
+            if not isinstance(self.price_df.index, pd.DatetimeIndex):
                 raise ValueError("The passed matrix has not the proper index.")
-        self.dates = prices.index
-        self.prices = prices.values
+        self.prices = self.price_df.values
+        self.num_assets = self.price_df.shape[1]
         
         # Current portfolio positions
-        if not isinstance(positions, pd.Series):
-            raise ValueError("The passed matrix is not a pandas.Series.")
-        # else: #TODO: Check if position tickers are in self.prices
-        self.positions = positions
+        self.positions_df = portfolio.get_positions_df()
+        if not isinstance(self.positions_df, pd.DatFrame):
+            raise ValueError("The passed matrix is not a pandas.DataFrame.")
         
         # Strategy dictionary
         if not isinstance(strategy, dict):
-            raise ValueError("The strategy is a dictionary.")
-        if 'construction' not in strategy.keys():
+            raise ValueError("The strategy is not a dictionary.")
+        if 'name' not in strategy.keys():
             raise ValueError("Specify the strategy name!")
         if 'rebalance' not in strategy.keys():
-            raise ValueError("Specify the weight distribution algorithm!")
-        if strategy['construction'] not in CONSTRUCTION:
+            raise ValueError("Specify the weight distribution algorithm.")
+        if strategy['name'] not in NAME:
             raise NotImplementedError("Try again: Not a strategy")
         if strategy['rebalance'] not in REBALANCE:
-            raise NotImplementedError("Try again: not a rebalancing frequency")
+            raise NotImplementedError("Try again: not a rebalancing method")
+        if strategy['lookback'] not in LOOKBACK:
+            raise NotImplementedError("Try again: not a lookback window")
         self.strategy = strategy
         
+    def get_initial_weights(self):
+
+        # initialize weights
+        if self.strategy['name'] == 'EqualWeight':
+            init_weights = 1/self.num_assets           
+        elif self.strategy['name'] == 'CustomWeight':
+            #TODO: user-defined
+            init_weights = 1/self.num_assets
+        elif self.strategy['name'] == 'MVO':
+            #TODO: Mean-variance optimization
+            init_weights = 1/self.num_assets
+        elif self.strategy['name'] == 'IVP':
+            #TODO: Inverse variance portfolio
+            init_weights = 1/self.num_assets
+        elif self.strategy['name'] == 'HRP':
+            #TODO: Hierarchical Risk Parity (Ch. 16: Advances in Financial ML)
+            init_weights = 1/self.num_assets
         
