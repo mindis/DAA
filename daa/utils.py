@@ -54,13 +54,13 @@ class Exchange:
         return price
 
 class Portfolio:
-    def __init__(self, start_ds):
+    def __init__(self, start_ds, exchange):
         self.id = 1
         self.ds = pd.to_datetime(start_ds)
         self.cash_balance = 0
         self.orders = []
         self.trade_id = 0
-
+        self.exchange = exchange
         self.trade_blotter = {}
         self.positions = defaultdict(lambda: 0)
 
@@ -70,18 +70,21 @@ class Portfolio:
         return df
 
     def get_positions_df(self):
-        """Returns a series indexed by ticker"""
+        """Returns a dataframe indexed by ticker"""
         positions_df = pd.DataFrame()
         blotter_df = self.get_trade_blotter()
         if blotter_df.shape[0] > 0:
-            positions_df = blotter_df.groupby(['ticker']).sum()['quantity'] 
+            positions_df = pd.DataFrame(blotter_df.groupby(['ticker'])
+                                        .sum()['quantity'])
+        
+        for idx in range(len(positions_df)):
+            ticker = positions_df.index[idx]
+            price = self.exchange.get_price(ticker, self.ds)
+            positions_df.loc[positions_df.index[idx], 'price'] = price
+            
+        positions_df['value'] = positions_df['price'] * positions_df['quantity']
+        positions_df['wgt'] = positions_df['value'] / positions_df['value'].sum()
         return positions_df
-    
-    def get_portfolio_weights(self):
-        positions = self.get_positions_df()
-        for position in len(positions)-1:
-            ticker = positions.index[position]
-            price = exchange.get_price(ticker, self.ds)
 
     def pass_time(self, units): # TODO: Assuming hours are always units
         for h in range(units):
@@ -111,7 +114,6 @@ class Portfolio:
                                     'price': price}
 
                     elif side == 'sell':
-                        #TODO: Steve mentions shares would be cleaner here
                         if quantity > self.get_positions_df().loc[ticker]:
                             raise ValueError('Not enough shares!')
 
