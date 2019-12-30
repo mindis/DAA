@@ -17,21 +17,23 @@ def returns(df, horizon):
     """Calculates multiplicative returns of all series in a data frame"""
     return (df / df.shift(periods=horizon)) - 1    
 
-def perf_stats(df, freq):
-    """ Calculate Performance statistics
+def perf_stats(returns_df, freq, stratname):
+    """ Calculate performance statistics
     Parameters:
     freq (int): 4 for qtrly, 12 for monthly, 252 for daily
-    Returns:
-    tuple: TODO(baogorek): needs description
-    """
-    df2 = df.dropna()
-    ret = df2.mean() * freq
-    vol = df2.std() * sqrt(freq)
-    sharpe = ret / vol
-    lpm = df2.clip(upper=0)
-    down_vol = lpm.loc[(lpm != 0).any(axis=1)]
-    sortino = ret / down_vol
-    return ret, vol, sharpe, down_vol, sortino
+    df (dataframe): dataframe of returns specified by the frequency
+    """    
+    stats = pd.DataFrame(columns = [stratname], index=['Ann. Returns', 'Ann. Vol', 
+                     'Sharpe','Downside Vol', 'Sortino', 'Max 12M Drawdown'])
+    df2 = returns_df.dropna()
+    stats.iloc[0] = df2.mean() * freq
+    stats.iloc[1] = df2.std() * sqrt(freq)
+    stats.iloc[2] = (df2.mean()*freq) / (df2.std()*sqrt(freq))
+    lpm = df2.clip(upper=0) 
+    stats.iloc[3] = (lpm.loc[(lpm != 0)]).std() * sqrt(freq)
+    stats.iloc[4] = (df2.mean()*freq) / ((lpm.loc[(lpm != 0)]).std()*sqrt(freq))
+    stats.iloc[5] = ((1+df2).rolling(freq).apply(np.prod, raw=False) - 1).min()
+    return stats
 
 class Exchange:
     
@@ -239,5 +241,4 @@ class Backtest:
                 # Calculate number of trades.
                 # Submit trades to Exchange for execution at day + 1
                 # Next day
-
                 print(day)

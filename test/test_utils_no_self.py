@@ -6,29 +6,31 @@ import numpy as np
 
 from daa.utils import *
 
-#cwd =  r'C:\Users\halls\DAA\test'
-cwd = os.getcwd()
+cwd =  r'C:\devl\DAA\test'
+# cwd = os.getcwd()
 print(cwd)
 
 # User inputs: date range, strategy and User ID
 dates = pd.bdate_range(start = '1/4/2016', end ='12/17/2019') #YYYYMMDD
-strategy = {'construction': 'EqualWeight', 'rebalance': 'Limit',
+strategy = {'name': 'EqualWeight', 'rebalance': 'Limit',
             'lookback': '1YR', 'limit': 0.05}
-ID = 1
+ID = 1 # user ID
 initial_cash = 1e6
 
 # Create Exchange and Portfolio objects
 exchange = Exchange(os.path.join(cwd,'testdata/PriceData.csv'))
 portfolio = Portfolio(dates[0], exchange, initial_cash, ID) 
+assert portfolio.cash_balance == 1e6, "Cash incorrect!"
 
-backtest = Backtest(exchange, portfolio, strategy, dates)
+backtest = Backtest(exchange, portfolio, strategy, dates, ID)
 backtest.run()
 
 # TODO: Create Data Visualization Class
 # Print table of portfolio statistics vs. generic benchmarks
 # Plot cumulative total return series vs. generics
 # Plot rolling max drawdowns
-
+blotter_df = portfolio.get_trade_blotter()
+positions = portfolio.get_positions_df()
 price_df = exchange.get_price_df()
 
 portfolio.pass_time(6)
@@ -39,12 +41,11 @@ portfolio.place_order('EM_Index', 'buy', 5, 'market', exchange)
 portfolio.pass_time(12)
 print(portfolio.cash_balance)
 positions = portfolio.get_positions_df()        
-assert positions['SPX_Index'] == 5, "Number of shares incorrect!"
+assert positions.loc['SPX_Index','quantity'] == 5, "Shares incorrect!"
 portfolio.place_order('SPX_Index', 'sell', 3, 'market', exchange)
 portfolio.pass_time(24) 
 positions = portfolio.get_positions_df() 
-assert positions['SPX_Index'] == 2, "Remaining shares incorrect!"
-
+assert positions.loc['SPX_Index','quantity'] == 2, "Remaining shares incorrect!"
 
 #OTHER TESTS:
 positions = portfolio.get_positions_df()   
