@@ -10,9 +10,6 @@ NAME = ['EqualWeight','CustomWeight', 'MVO', 'IVP', 'HRP']
 REBALANCE = ['Limit','TripleBarrier', 'Monthly', 'Quarterly', 'Annual']
 LOOKBACK = ['1YR', '2YR', '3YR', '5YR', '10YR']
 
-def send_four():
-    return 4
-
 def returns(df, horizon):
     """Calculates multiplicative returns of all series in a data frame"""
     return (df / df.shift(periods=horizon)) - 1    
@@ -56,14 +53,22 @@ class Exchange:
         print(price)
         return price
 
+# TODO: fix start time
 class Portfolio:
+    """Portfolio is a snapshot in time of all positions."""
     def __init__(self, start_ds, exchange, cash, ID):
+        """Initialize a Portfolio
+
+        self.ds (DateTime): The current time in which Portfolio exists
+        """
         self.id = ID
-        self.ds = pd.to_datetime(start_ds)
+        self.exchange = exchange 
+        self.price_df = exchange.get_price_df()
+        self.price_row = 0 
+        self.ds = pd.to_datetime(self.price_df.index[self.price_row])
         self.cash_balance = cash
-        self.orders = []
-        self.trade_id = 0
-        self.exchange = exchange
+        self.orders = []  # TODO: move this property to another class
+        self.trade_id = 0 
         self.trade_blotter = {}
         self.positions = defaultdict(lambda: 0)
 
@@ -89,45 +94,44 @@ class Portfolio:
             positions_df['wgt'] = positions_df['value'] / positions_df['value'].sum()
         return positions_df
     
-    def pass_time(self, units): # TODO: Assuming hours are always units
-        for h in range(units):
-            self.ds += datetime.timedelta(hours=1)
-            print(self.ds)
-            if self.ds.hour == 16: # Execute all orders when the market closes
-                while len(self.orders) > 0:
-                    order = self.orders.pop()
-                    ticker = order[0]
-                    exchange = order[4]                    
-                    quantity = order[2]
-                    side = order[1]
-                    price = exchange.get_price(ticker, self.ds)
-                    total_value = price * quantity
-                    print("Before trade------------------------------")
-                    print(self.get_trade_blotter())
-                    print(self.get_positions_df())
-                    if side == 'buy':
-                        if total_value > self.cash_balance:
-                            raise ValueError('Not enough cash!')
+    def pass_time(self):
+        self.price_row += 1
+        self.ds = pd.to_datetime(self.price_df.index[self.price_row])
+        print(self.ds)
+        while len(self.orders) > 0:
+            order = self.orders.pop()
+            ticker = order[0]
+            exchange = order[4]                    
+            quantity = order[2]
+            side = order[1]
+            price = exchange.get_price(ticker, self.ds)
+            total_value = price * quantity
+            print("Before trade------------------------------")
+            print(self.get_trade_blotter())
+            print(self.get_positions_df())
+            if side == 'buy':
+                if total_value > self.cash_balance:
+                    raise ValueError('Not enough cash!')
 
-                        self.trade_id += 1
-                        self.cash_balance -= total_value 
-                        self.trade_blotter[self.trade_id] = {
-                                               'ds': self.ds, 'ticker': ticker,
-                                               'quantity': quantity,
-                                               'price': price}
+                self.trade_id += 1
+                self.cash_balance -= total_value 
+                self.trade_blotter[self.trade_id] = {
+                                       'ds': self.ds, 'ticker': ticker,
+                                       'quantity': quantity,
+                                       'price': price}
 
-                    elif side == 'sell':
-                        if quantity > self.get_positions_df().loc[ticker,'quantity']:
-                            raise ValueError('Not enough shares!')
-                        self.trade_id += 1
-                        self.cash_balance += total_value
-                        self.trade_blotter[self.trade_id] = {
-                                               'ds': self.ds, 'ticker': ticker,
-                                               'quantity': -quantity,
-                                               'price': price}
-                    print("After trade------------------------------")
-                    print(self.get_trade_blotter())
-                    print(self.get_positions_df())
+            elif side == 'sell':
+                if quantity > self.get_positions_df().loc[ticker,'quantity']:
+                    raise ValueError('Not enough shares!')
+                self.trade_id += 1
+                self.cash_balance += total_value
+                self.trade_blotter[self.trade_id] = {
+                                       'ds': self.ds, 'ticker': ticker,
+                                       'quantity': -quantity,
+                                       'price': price}
+            print("After trade------------------------------")
+            print(self.get_trade_blotter())
+            print(self.get_positions_df())
 
 
     def add_cash(self, amount):

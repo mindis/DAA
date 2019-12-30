@@ -6,7 +6,7 @@ import numpy as np
 
 from daa.utils import *
 
-cwd =  r'C:\devl\DAA\test'
+cwd =  r'test'
 # cwd = os.getcwd()
 print(cwd)
 
@@ -33,17 +33,17 @@ blotter_df = portfolio.get_trade_blotter()
 positions = portfolio.get_positions_df()
 price_df = exchange.get_price_df()
 
-portfolio.pass_time(6)
+#portfolio.pass_time(6)
 portfolio.place_order('SPX_Index', 'buy', 5, 'market', exchange)
 portfolio.place_order('EAFE_Index', 'buy', 5, 'market', exchange)
 portfolio.place_order('Small_Growth_Index', 'buy', 5, 'market', exchange)
 portfolio.place_order('EM_Index', 'buy', 5, 'market', exchange)
-portfolio.pass_time(12)
+portfolio.pass_time()
 print(portfolio.cash_balance)
 positions = portfolio.get_positions_df()        
 assert positions.loc['SPX_Index','quantity'] == 5, "Shares incorrect!"
 portfolio.place_order('SPX_Index', 'sell', 3, 'market', exchange)
-portfolio.pass_time(24) 
+portfolio.pass_time() 
 positions = portfolio.get_positions_df() 
 assert positions.loc['SPX_Index','quantity'] == 2, "Remaining shares incorrect!"
 
