@@ -50,7 +50,6 @@ class Exchange:
         if ticker not in self.price_df.columns:
             raise KeyError("Try again: Ticker not found")
         price = float(self.price_df.loc[time_bar][ticker].values[0])
-        print(price)
         return price
 
 # TODO: fix start time
@@ -70,7 +69,6 @@ class Portfolio:
         self.orders = []  # TODO: move this property to another class
         self.trade_id = 0 
         self.trade_blotter = {}
-        self.positions = defaultdict(lambda: 0)
 
     def get_trade_blotter(self):
         df = pd.DataFrame.from_dict(self.trade_blotter, orient='index')
@@ -97,7 +95,6 @@ class Portfolio:
     def pass_time(self):
         self.price_row += 1
         self.ds = pd.to_datetime(self.price_df.index[self.price_row])
-        print(self.ds)
         while len(self.orders) > 0:
             order = self.orders.pop()
             ticker = order[0]
@@ -106,9 +103,6 @@ class Portfolio:
             side = order[1]
             price = exchange.get_price(ticker, self.ds)
             total_value = price * quantity
-            print("Before trade------------------------------")
-            print(self.get_trade_blotter())
-            print(self.get_positions_df())
             if side == 'buy':
                 if total_value > self.cash_balance:
                     raise ValueError('Not enough cash!')
@@ -129,9 +123,6 @@ class Portfolio:
                                        'ds': self.ds, 'ticker': ticker,
                                        'quantity': -quantity,
                                        'price': price}
-            print("After trade------------------------------")
-            print(self.get_trade_blotter())
-            print(self.get_positions_df())
 
 
     def add_cash(self, amount):
@@ -145,7 +136,7 @@ class Portfolio:
     
 class Backtest:
     
-    def __init__(self, exchange, portfolio, strategy, dates, ID):
+    def __init__(self, portfolio, strategy, dates, ID):
         
         """Main class to calculate trades based on strategy rules.
         
@@ -170,33 +161,12 @@ class Backtest:
         self.end_dt = self.dates.max()
 
         # Dataframe of asset prices with date index
-        self.price_df = exchange.get_price_df() 
-        if not isinstance(self.price_df, pd.DataFrame):
-            raise ValueError("The passed matrix is not a pandas.DataFrame.")
-        else:
-            if not isinstance(self.price_df.index, pd.DatetimeIndex):
-                raise ValueError("The passed matrix has not the proper index.")
+        self.price_df = portfolio.exchange.get_price_df() 
         self.prices = self.price_df.values
         self.num_assets = self.price_df.shape[1]
         
         # Current portfolio positions
         self.positions_df = portfolio.get_positions_df()
-        if not isinstance(self.positions_df, pd.DataFrame):
-            raise ValueError("The passed matrix is not a pandas.DataFrame.")
-        
-        # Strategy dictionary
-        if not isinstance(strategy, dict):
-            raise ValueError("The strategy is not a dictionary.")
-        if 'name' not in strategy.keys():
-            raise ValueError("Specify the strategy name!")
-        if 'rebalance' not in strategy.keys():
-            raise ValueError("Specify the weight distribution algorithm.")
-        if strategy['name'] not in NAME:
-            raise NotImplementedError("Try again: Not a strategy")
-        if strategy['rebalance'] not in REBALANCE:
-            raise NotImplementedError("Try again: not a rebalancing method")
-        if strategy['lookback'] not in LOOKBACK:
-            raise NotImplementedError("Try again: not a lookback window")
         self.strategy = strategy
         
     def get_initial_weights(self):
@@ -246,3 +216,21 @@ class Backtest:
                 # Submit trades to Exchange for execution at day + 1
                 # Next day
                 print(day)
+
+class Strategy:
+    def __init__(self, strategy):
+        # Strategy dictionary
+        if not isinstance(strategy, dict):
+            raise ValueError("The strategy is not a dictionary.")
+        if 'name' not in strategy.keys():
+            raise ValueError("Specify the strategy name!")
+        if 'rebalance' not in strategy.keys():
+            raise ValueError("Specify the weight distribution algorithm.")
+        if strategy['name'] not in NAME:
+            raise NotImplementedError("Try again: Not a strategy")
+        if strategy['rebalance'] not in REBALANCE:
+            raise NotImplementedError("Try again: not a rebalancing method")
+        if strategy['lookback'] not in LOOKBACK:
+            raise NotImplementedError("Try again: not a lookback window")
+        self.strategy = strategy
+
