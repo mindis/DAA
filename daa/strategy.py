@@ -13,6 +13,7 @@ class Strategy1:
         purchased_tickers = portfolio.get_positions_df().index.to_list()  
 
         for ticker in purchased_tickers:
+            print(ticker)
             value_dict[ticker] = (portfolio.get_positions_df()
                                            .loc[ticker]['value'])
             total += value_dict[ticker]
@@ -28,7 +29,8 @@ class Strategy1:
     def compute_target_weights(self, portfolio):
         return {'Cash': 0., 'SPX_Index': .25, 'EAFE_Index': .25, 'EM_Index': .50}
 
-    def calculate_trades(self, porfolio):
+    def calculate_trades(self, portfolio):
+        
         actual_weights = self.compute_actual_weights(portfolio)
         target_weights = self.compute_target_weights(portfolio)
 
@@ -36,8 +38,7 @@ class Strategy1:
 
         prices = {'Cash': 1.}
         for ticker in tickers:
-            prices[ticker] = price_df.loc[portfolio.ds][ticker]
-
+            prices[ticker] = self.price_df.loc[portfolio.ds][ticker]
         total = portfolio.get_positions_df()['value'].sum() + portfolio.cash_balance
 
         delta_weights = {}

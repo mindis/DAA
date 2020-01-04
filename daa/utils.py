@@ -43,7 +43,15 @@ class Exchange:
     
     def get_price_df(self):
         prices = self.price_df
-        return prices    
+        return prices  
+    
+    def is_end_of_month(self, date):
+        date_ts = pd.to_datetime(date)
+        all_dates = self.price_df.index
+        mmyyyy = all_dates.strftime('%Y%m')
+        dates_dict = all_dates.groupby(mmyyyy)
+        eom_dates = [max(dates_dict[month]) for month in dates_dict.keys()] 
+        return date_ts in eom_dates
     
     def get_price(self, ticker, ds):
         time_bar = self.price_df.index == pd.to_datetime(ds.date())
@@ -77,15 +85,22 @@ class Portfolio:
 
     def get_positions_df(self):
         """Returns a dataframe indexed by ticker"""
-        positions_df = pd.DataFrame()
+        positions_df = pd.DataFrame({'quantity': self.cash_balance, 
+                                     'value': self.cash_balance},
+                                    index=['Cash'])
+        positions_df.index.name = 'ticker'
         blotter_df = self.get_trade_blotter()
         if blotter_df.shape[0] > 0:
-            positions_df = pd.DataFrame(blotter_df.groupby(['ticker'])
-                                            .sum()['quantity'])
+            positions_df = pd.concat([positions_df, 
+                                      pd.DataFrame(blotter_df.groupby(['ticker'])
+                                            .sum()['quantity'])])
             
             for idx in range(len(positions_df)):
                 ticker = positions_df.index[idx]
-                price = self.exchange.get_price(ticker, self.ds)
+                if ticker == 'Cash':
+                    price = 1.
+                else:
+                    price = self.exchange.get_price(ticker, self.ds)
                 positions_df.loc[positions_df.index[idx], 'price'] = price
                 
             positions_df['value'] = positions_df['price'] * positions_df['quantity']
