@@ -1,15 +1,17 @@
 import numpy as np
+from collections import defaultdict
 
 class Strategy1:
     def __init__(self, exchange, schedule):
         self.exchange = exchange
         self.price_df = exchange.get_price_df()
         self.schedule = 'M'
+        print('version 1.3')
 
     def compute_actual_weights(self, portfolio):
         tickers = ['SPX_Index', 'EAFE_Index', 'EM_Index']
-        total = portfolio.cash_balance
-        value_dict = {'Cash': portfolio.cash_balance} 
+        total = 0
+        value_dict = {} 
         purchased_tickers = portfolio.get_positions_df().index.to_list()  
 
         for ticker in purchased_tickers:
@@ -27,7 +29,12 @@ class Strategy1:
         return value_dict
 
     def compute_target_weights(self, portfolio):
-        return {'Cash': 0., 'SPX_Index': .25, 'EAFE_Index': .25, 'EM_Index': .50}
+        target_dict = defaultdict(lambda: 0.)
+        target_dict['Cash'] = .25,
+        target_dict['SPX_Index'] = .25
+        target_dict['EAFE_Index'] = .25
+        target_dict['EM_Index'] =.50
+        return target_dict
 
     def calculate_trades(self, portfolio):
         
@@ -39,12 +46,14 @@ class Strategy1:
         prices = {'Cash': 1.}
         for ticker in tickers:
             prices[ticker] = self.price_df.loc[portfolio.ds][ticker]
-        total = portfolio.get_positions_df()['value'].sum() + portfolio.cash_balance
+        total = portfolio.get_positions_df()['value'].sum()
 
         delta_weights = {}
-        shares = {}
+        shares_to_trade = {}
         for ticker in tickers:
             delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
-            shares[ticker] = np.floor(total * delta_weights[ticker] / prices[ticker])
+            shares = np.floor(total * delta_weights[ticker] / prices[ticker])
+            if np.abs(shares) > 0:
+                shares_to_trade[ticker] = shares
 
-        return shares
+        return shares_to_trade
