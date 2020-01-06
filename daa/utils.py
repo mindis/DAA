@@ -4,12 +4,6 @@ import pandas as pd
 import numpy as np
 from math import sqrt
 
-# equally weighted, user-defined weights, mean-variance optimization,
-# inverse variance portfolio (risk parity), hierarchical risk parity 
-NAME = ['EqualWeight','CustomWeight', 'MVO', 'IVP', 'HRP']
-REBALANCE = ['Limit','TripleBarrier', 'Monthly', 'Quarterly', 'Annual']
-LOOKBACK = ['1YR', '2YR', '3YR', '5YR', '10YR']
-
 def returns(df, horizon):
     """Calculates multiplicative returns of all series in a data frame"""
     return (df / df.shift(periods=horizon)) - 1    
@@ -145,107 +139,9 @@ class Portfolio:
 
     def place_order(self, ticker, side, quantity, order_type, exchange):
         self.orders.append((ticker, side, quantity, order_type, exchange))
+        buys = [order for order in self.orders if order[1] == 'buy']
+        sells = [order for order in self.orders if order[1] == 'sell']
+        self.orders = buys + sells # buys get popped off list first
         
     def cash_balance(self):
         return self.cash_balance
-    
-class Backtest:
-    
-    def __init__(self, portfolio, strategy, dates, ID):
-        
-        """Main class to calculate trades based on strategy rules.
-        
-        Parameters
-        ----------
-        exchange: object containing dates and prices
-            Matrix of prices. 
-        potions: pandas.Series
-            Matrix of positions.
-        strategy: dictionary
-            With keys 'name' (strategy algorithm)
-            and 'allocation' (weighting scheme).
-        num_assets: int
-            Number of assets in modeled portfolio
-        dates: DatetimeIndex
-            index of user-defined dates for the backtest
-        """
-        self.id = ID # placeholder for customer unique ID
-        self.initial_cash = portfolio.cash_balance
-        self.dates = dates
-        self.start_dt = self.dates.min()
-        self.end_dt = self.dates.max()
-
-        # Dataframe of asset prices with date index
-        self.price_df = portfolio.exchange.get_price_df() 
-        self.prices = self.price_df.values
-        self.num_assets = self.price_df.shape[1]
-        
-        # Current portfolio positions
-        self.positions_df = portfolio.get_positions_df()
-        self.strategy = strategy
-        
-    def get_initial_weights(self):
-
-        # initialize weights
-        if self.strategy['name'] == 'EqualWeight':
-            init_weights = 1/self.num_assets           
-        elif self.strategy['name'] == 'CustomWeight':
-            #TODO: user-defined
-            init_weights = 1/self.num_assets
-        elif self.strategy['name'] == 'MVO':
-            #TODO: Mean-variance optimization
-            init_weights = 1/self.num_assets
-        elif self.strategy['name'] == 'IVP':
-            #TODO: Inverse variance portfolio
-            init_weights = 1/self.num_assets
-        elif self.strategy['name'] == 'HRP':
-            #TODO: Hierarchical Risk Parity (Ch. 16: Advances in Financial ML)
-            init_weights = 1/self.num_assets
-        return init_weights
-    
-    def run(self):
-
-        cash = self.initial_cash
-        dates = self.dates
-        num_assets = self.num_assets
-        
-        # Always start equally weighted
-        # Assumes initial cash put to work on close of first day
-        price1 = self.prices[0]
-        shares = (cash/num_assets)/price1 # assumes fractional shares        
-        
-        # TODO: Should we create initial orders here? 
-        
-        # start the backtest
-        for i, day in enumerate(dates):
-
-            if self.strategy['name'] == 'EqualWeight':
-                
-                # TODO:
-                # Execute any trades in order blotter from previous day.
-                # Then calculate current portfolio weights.
-                # curr_weights = portfolio.get_positions_df().
-                # Calculate target weights.
-                # Compare target weights to current weights.
-                # Calculate number of trades.
-                # Submit trades to Exchange for execution at day + 1
-                # Next day
-                print(day)
-
-class Strategy:
-    def __init__(self, strategy):
-        # Strategy dictionary
-        if not isinstance(strategy, dict):
-            raise ValueError("The strategy is not a dictionary.")
-        if 'name' not in strategy.keys():
-            raise ValueError("Specify the strategy name!")
-        if 'rebalance' not in strategy.keys():
-            raise ValueError("Specify the weight distribution algorithm.")
-        if strategy['name'] not in NAME:
-            raise NotImplementedError("Try again: Not a strategy")
-        if strategy['rebalance'] not in REBALANCE:
-            raise NotImplementedError("Try again: not a rebalancing method")
-        if strategy['lookback'] not in LOOKBACK:
-            raise NotImplementedError("Try again: not a lookback window")
-        self.strategy = strategy
-
