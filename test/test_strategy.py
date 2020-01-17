@@ -3,6 +3,9 @@ import unittest
 
 from daa.strategy import *
 from daa.utils import *
+from daa.portfolio import *
+from daa.exchange import *
+from daa.backtest import *
 
 class StrategyTest(unittest.TestCase):
 
@@ -30,50 +33,30 @@ class StrategyTest(unittest.TestCase):
         portfolio.pass_time()
         portfolio.get_positions_df()
 
-        # Hack backtest using strategy
-        cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'testdata/PriceData.csv'))
         strategy = Strategy1(exchange, 'M')
-        start_dt = '2016-01-06'
-        end_dt = '2017-02-02'
-        #portfolio = Portfolio(start_dt, exchange, 100000, 0)
-        # TODO: Bought too much EM, running out of cash to fund another buy
-        while portfolio.ds < pd.to_datetime(end_dt):
-            portfolio.pass_time()
-            print(portfolio.ds)
-            if exchange.is_end_of_month(portfolio.ds):
-                actual_weights = strategy.compute_actual_weights(portfolio)
-                target_weights = strategy.compute_target_weights(portfolio)
-                trades = strategy.calculate_trades(portfolio)
-                for ticker in trades.keys():
-                    side = 'buy' if trades[ticker] > 0 else 'sell'
-                    portfolio.place_order(ticker, side, np.abs(trades[ticker]),
-                                  'market', exchange)    
-            
+
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run('2019-09-02')
+
+        portfolio.get_positions_df()
+           
  class Strategy2Test(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        # Using a different exhange this time, one with the AGG_ETF
-        # Wish the data went back further, but that also gives us an opportunity!
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
 
-        # Day 1: Set up a starting condition before applying strategy
-        portfolio = Portfolio('2004-12-31', exchange, 100000, 0)
-        #$portfolio.place_order('SPX_Index', 'buy', 5, 'market', exchange)
-        #$portfolio.place_order('EAFE_Index', 'buy', 5, 'market', exchange)
-        #$portfolio.place_order('EM_Index', 'buy', 5, 'market', exchange)
-        #$portfolio.place_order('Large_Value_Index', 'buy', 5, 'market', exchange)
-        #$portfolio.pass_time()
+        # TODO: starting portfolio on non market day leads to error:
+        #portfolio = Portfolio('2006-12-31', exchange, 100000, 0)
 
-        # Hack backtest using strategy
-        cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        portfolio = Portfolio('2006-12-20', exchange, 100000, 0)
         strategy = Strategy2(exchange, 'M')
-        start_dt = '2016-01-06'
-        end_dt = '2017-02-02'
-        #portfolio = Portfolio(start_dt, exchange, 100000, 0)
-        # TODO: Bought too much EM, running out of cash to fund another buy
+
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run('2009-09-02')
+
+        portfolio.get_positions_df()
+ 
         while portfolio.ds < pd.to_datetime(end_dt):
             portfolio.pass_time()
             print(portfolio.ds)

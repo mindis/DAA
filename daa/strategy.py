@@ -105,6 +105,7 @@ class Strategy2:
         target_dict['AGG_ETF'] = 0.0
 
         tr_cape = price_df.loc[portfolio.ds].tr_cape
+        print(tr_cape)
         if tr_cape > 24:
            target_dict['SPX_Index'] = np.exp(-(tr_cape - 24)**2 / 40)
            target_dict['AGG_ETF'] = 1. - target_dict['SPX_Index']
