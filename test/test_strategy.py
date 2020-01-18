@@ -1,9 +1,11 @@
 import os
 import unittest
 
-
-from daa.strategy import *
+from daa.strategy import Strategy1, Strategy2
 from daa.utils import *
+from daa.portfolio import *
+from daa.exchange import *
+from daa.backtest import *
 
 class StrategyTest(unittest.TestCase):
 
@@ -31,14 +33,34 @@ class StrategyTest(unittest.TestCase):
         portfolio.pass_time()
         portfolio.get_positions_df()
 
-        # Hack backtest using strategy
-        cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'testdata/PriceData.csv'))
         strategy = Strategy1(exchange, 'M')
-        start_dt = '2016-01-06'
-        end_dt = '2017-02-02'
-        #portfolio = Portfolio(start_dt, exchange, 100000, 0)
-        # TODO: Bought too much EM, running out of cash to fund another buy
+
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run('2019-09-02')
+
+        portfolio.get_positions_df()
+           
+ class Strategy2Test(unittest.TestCase):
+
+    def setUp(self):
+        cwd = 'test'
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+
+        # TODO: starting portfolio on non market day leads to error:
+        #portfolio = Portfolio('2006-12-31', exchange, 100000, 0)
+
+        portfolio = Portfolio('1995-01-20', exchange, 100000, 0)
+        portfolio.get_positions_df()
+
+        strategy = Strategy2(exchange, 'M')
+
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run('2001-03-30')
+
+        portfolio.get_trade_blotter()
+        portfolio.get_positions_df()
+        strategy.get_trcape(portfolio)
+ 
         while portfolio.ds < pd.to_datetime(end_dt):
             portfolio.pass_time()
             print(portfolio.ds)
@@ -49,8 +71,5 @@ class StrategyTest(unittest.TestCase):
                 for ticker in trades.keys():
                     side = 'buy' if trades[ticker] > 0 else 'sell'
                     portfolio.place_order(ticker, side, np.abs(trades[ticker]),
-                                  'market', exchange)    
-            
-        
-        
-                
+                                  'market', exchange)
+# Next
