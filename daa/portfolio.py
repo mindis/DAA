@@ -35,9 +35,9 @@ class Portfolio:
         positions_df.index.name = 'ticker'
         blotter_df = self.get_trade_blotter()
         if blotter_df.shape[0] > 0:
-            positions_df = pd.concat([positions_df, 
-                                      pd.DataFrame(blotter_df.groupby(['ticker'])
-                                            .sum()['quantity'])])
+            update = pd.DataFrame(blotter_df.groupby(['ticker'])
+                                            .sum()['quantity'])
+            positions_df = pd.concat([positions_df, update], sort=False)
             
             for idx in range(len(positions_df)):
                 ticker = positions_df.index[idx]
@@ -85,13 +85,22 @@ class Portfolio:
 
 
     def add_cash(self, amount):
-        self.cash_balance += amount 
+        self.cash_balance += amount
+
+    def get_prices(self):
+        """Returns dictionary of prices at the current date"""
+        return self.exchange.get_price_df().loc[self.ds].to_dict()
 
     def place_order(self, ticker, side, quantity, order_type, exchange):
         self.orders.append((ticker, side, quantity, order_type, exchange))
         buys = [order for order in self.orders if order[1] == 'buy']
+        # Buy the most expensive asset first TODO: this is doing nothing here
+        buys = sorted(buys, key=lambda order: -self.get_prices()[order[0]])
+        # Sell the most expensive asset first TODO: this is doing nothing here
         sells = [order for order in self.orders if order[1] == 'sell']
-        self.orders = buys + sells # buys get popped off list first
+        sells = sorted(sells, key=lambda order: -self.get_prices()[order[0]])
+        # sells get popped off list first so sells happen before buys
+        self.orders = buys + sells
         
     def cash_balance(self):
         return self.cash_balance
