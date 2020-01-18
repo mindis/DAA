@@ -129,6 +129,8 @@ class Strategy2:
         for ticker in tickers:
             delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
             shares = np.floor(total * delta_weights[ticker] / prices[ticker])
+            if shares * prices[ticker] > portfolio.cash_balance:
+                shares -= 1
             if np.abs(shares) > 0:
                 shares_to_trade[ticker] = shares
 

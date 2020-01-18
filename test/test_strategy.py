@@ -40,7 +40,7 @@ class StrategyTest(unittest.TestCase):
 
         portfolio.get_positions_df()
            
- class Strategy2Test(unittest.TestCase):
+class Strategy2Test(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
@@ -49,13 +49,13 @@ class StrategyTest(unittest.TestCase):
         # TODO: starting portfolio on non market day leads to error:
         #portfolio = Portfolio('2006-12-31', exchange, 100000, 0)
 
-        portfolio = Portfolio('1995-01-20', exchange, 100000, 0)
+        portfolio = Portfolio('1990-01-02', exchange, 100000, 0)
         portfolio.get_positions_df()
 
         strategy = Strategy2(exchange, 'M')
 
         backtest = Backtest(portfolio, exchange, strategy)
-        backtest.run('2001-03-30')
+        backtest.run('2018-06-30')
 
         portfolio.get_trade_blotter()
         portfolio.get_positions_df()

@@ -26,6 +26,7 @@ class Backtest:
 
     def plot_total_return(self):
         plt.plot(self.value_df.groupby('Date').sum()['value'])
+        plt.title('Cumulative Growth of Initial Investment')
         plt.show()
 
     def run(self, end_dt):
