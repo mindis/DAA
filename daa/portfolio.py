@@ -2,25 +2,18 @@ import pandas as pd
 
 class Portfolio:
     """Portfolio is a snapshot in time of all positions."""
-    def __init__(self, start_ds, exchange, cash, ID):
+    def __init__(self, date, exchange, cash, ID):
         """Initialize a Portfolio
 
         self.ds (DateTime): The current time in which Portfolio exists
         """
         self.id = ID
+        self.ds = pd.to_datetime(date)
         self.exchange = exchange 
-        self.price_df = exchange.get_price_df()
-        self.price_row = self._get_row_from_date(start_ds)
-        self.ds = pd.to_datetime(self.price_df.index[self.price_row])
         self.cash_balance = cash
         self.orders = []  # TODO: move this property to another class
         self.trade_id = 0 
         self.trade_blotter = {}
-
-    def _get_row_from_date(self, start_ds):
-        """From character string date representation (YYYY-MM-DD) to DF row"""
-        price_df2 = self.price_df.reset_index()
-        return price_df2.loc[price_df2.Date == start_ds].index[0]
 
     def get_trade_blotter(self):
         df = pd.DataFrame.from_dict(self.trade_blotter, orient='index')
@@ -50,9 +43,8 @@ class Portfolio:
             positions_df['value'] = positions_df['price'] * positions_df['quantity']
             positions_df['wgt'] = positions_df['value'] / positions_df['value'].sum()
         return positions_df
-    
+    # TODO: A portfolio object does not pass time
     def pass_time(self):
-        self.price_row += 1
         self.ds = pd.to_datetime(self.price_df.index[self.price_row])
         while len(self.orders) > 0:
             order = self.orders.pop()
@@ -82,7 +74,7 @@ class Portfolio:
                                        'ds': self.ds, 'ticker': ticker,
                                        'quantity': -quantity,
                                        'price': price}
-
+        self.price_row += 1
 
     def add_cash(self, amount):
         self.cash_balance += amount
@@ -95,10 +87,10 @@ class Portfolio:
         self.orders.append((ticker, side, quantity, order_type, exchange))
         buys = [order for order in self.orders if order[1] == 'buy']
         # Buy the most expensive asset first TODO: this is doing nothing here
-        buys = sorted(buys, key=lambda order: -self.get_prices()[order[0]])
+        #buys = sorted(buys, key=lambda order: -self.get_prices()[order[0]])
         # Sell the most expensive asset first TODO: this is doing nothing here
         sells = [order for order in self.orders if order[1] == 'sell']
-        sells = sorted(sells, key=lambda order: -self.get_prices()[order[0]])
+        #sells = sorted(sells, key=lambda order: -self.get_prices()[order[0]])
         # sells get popped off list first so sells happen before buys
         self.orders = buys + sells
         
