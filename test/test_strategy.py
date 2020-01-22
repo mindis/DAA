@@ -44,20 +44,18 @@ class Strategy2Test(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-        prices = exchange.get_price_df('1999-01-04','1999-12-31')
         # TODO: starting portfolio on non market day leads to error:
         #portfolio = Portfolio('2006-12-31', exchange, 100000, 0)
-        portfolio = Portfolio('1999-01-04',exchange, 1000000, 0)
-        backtest = Backtest(portfolio, exchange, strategy)
-
-        portfolio.get_positions_df()
-
+        start_dt = '1999-01-04'
+        end_dt = '2001-12-31'
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        prices = exchange.get_price_df(start_dt, end_dt)
+        # Restart test here!
+        portfolio = Portfolio(start_dt, exchange, 1000000, 0)
+        print(portfolio.cash_balance)
         strategy = Strategy1(exchange, 'M')
-
-        
-        
-        backtest.run('1999-01-04','1999-12-31')
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run(start_dt, end_dt)
         
         value_df = backtest.get_value_df()
 

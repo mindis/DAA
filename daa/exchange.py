@@ -8,7 +8,10 @@ class Exchange:
         """Takes csv of closing prices and simulates exchange"""
         self.price_df = pd.read_csv(price_filepath, index_col=0,
                                      parse_dates=True)
-    
+        
+        # self.prices = self.price_df.loc[pd.to_datetime(start_dt):
+        #                                     pd.to_datetime(end_dt)]
+        
     def get_price_df(self, start_dt, end_dt):
         prices = self.price_df.loc[pd.to_datetime(start_dt):pd.to_datetime(end_dt)]
         return prices  
@@ -21,7 +24,7 @@ class Exchange:
         eom_dates = [max(dates_dict[month]) for month in dates_dict.keys()] 
         return date_ts in eom_dates
     
-    def get_price(self, ticker, ds):
+    def get_price(self, ds, ticker):
         if ticker not in self.price_df.columns:
             raise KeyError("Try again: Ticker not found")
         price = float(self.price_df.loc[ds][ticker])

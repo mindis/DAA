@@ -5,7 +5,6 @@ from collections import defaultdict
 class Strategy1:
     def __init__(self, exchange, schedule):
         self.exchange = exchange
-        self.price_df = exchange.get_price_df()
         self.schedule = 'M'
 
     def compute_actual_weights(self, portfolio):
@@ -40,11 +39,11 @@ class Strategy1:
         actual_weights = self.compute_actual_weights(portfolio)
         target_weights = self.compute_target_weights(portfolio)
 
-        tickers = set(actual_weights.keys()) - {'Cash'}
-
+        tickers = set(target_weights.keys()) - {'Cash'}
+        
         prices = {'Cash': 1.}
         for ticker in tickers:
-            prices[ticker] = self.price_df.loc[portfolio.ds][ticker]
+            prices[ticker] = self.exchange.get_price(portfolio.ds, ticker)
         total = portfolio.get_positions_df()['value'].sum()
 
         delta_weights = {}
@@ -52,8 +51,6 @@ class Strategy1:
         for ticker in tickers:
             delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
             shares = np.floor(total * delta_weights[ticker] / prices[ticker])
-            if shares * prices[ticker] > portfolio.cash_balance:
-                shares -= 1
             if np.abs(shares) > 0:
                 shares_to_trade[ticker] = shares
 
