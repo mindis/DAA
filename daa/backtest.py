@@ -6,8 +6,10 @@ from tqdm import tqdm
 import pdb
 
 from pandas.plotting import register_matplotlib_converters
-register_matplotlib_converters()
 import matplotlib.pyplot as plt
+
+pd.options.mode.chained_assignment = None
+register_matplotlib_converters()
 
 class Backtest:
     """Facilitates backtesting strategy on porfolio given exchange"""
@@ -32,10 +34,6 @@ class Backtest:
         plt.title('Cumulative Growth of Initial Investment')
         plt.show()
         
-    def get_value_df(self):
-        
-        return self.value_df
-        
     def calc_performance(self, freq):
         """ Calculate performance statistics
         Parameters:
@@ -53,20 +51,21 @@ class Backtest:
         stats.iloc[3] = (lpm.loc[(lpm != 0)]).std() * sqrt(freq)
         stats.iloc[4] = (returns.mean()*freq) / ((lpm.loc[(lpm != 0)]).std()*sqrt(freq))
         stats.iloc[5] = ((1+returns).rolling(freq).apply(np.prod, raw=False) - 1).min()
-        
+
         return stats
 
-    def run(self, start_dt, end_dt):
+    def run(self, end_dt):
         """Runs strategy on portfolio until end_dt"""
-        price_df = self.exchange.get_price_df(start_dt, end_dt)
-        # if pd.to_datetime(end_dt) <= self.portfolio.ds:
-        #     raise ValueError('end_dt must be after current portfolio date!')
+        if pd.to_datetime(end_dt) <= self.portfolio.ds:
+            raise ValueError('end_dt must be after current portfolio date!')
+
+        price_df = self.exchange.price_df.loc[self.portfolio.ds:end_dt]
         timedelta = len(price_df)
         pbar = tqdm(total = timedelta)
         
         for row in price_df.itertuples():
             self.portfolio.ds = row[0]
-            if self.exchange.is_end_of_month(self.portfolio.ds):
+            if price_df.loc[self.portfolio.ds].eobm:
                 # TODO: consider this code below for exchange or broker class
                 trades = self.strategy.calculate_trades(self.portfolio)
                 for ticker in trades.keys():

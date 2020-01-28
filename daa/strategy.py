@@ -59,8 +59,7 @@ class Strategy1:
 class Strategy2:
     def __init__(self, exchange, schedule):
         self.exchange = exchange
-        self.price_df = exchange.get_price_df()
-        self.schedule = 'M'
+        self.schedule = schedule 
 
     def compute_actual_weights(self, portfolio):
         tickers = ['SPX_Index', 'AGG_Index']
@@ -88,7 +87,7 @@ class Strategy2:
                                 index_col=0)
         trcape_df['yyyymm'] = trcape_df.index.to_period('M')
         # Merge tr_cape info in by month
-        price_df = self.price_df.copy()
+        price_df = self.exchange.price_df.copy()
         price_df['yyyymm'] = price_df.index.to_period('M')
         price_df.reset_index(inplace=True)
         price_df = price_df.merge(trcape_df, on='yyyymm')
@@ -120,7 +119,7 @@ class Strategy2:
 
         prices = {'Cash': 1.}
         for ticker in tickers:
-            prices[ticker] = self.price_df.loc[portfolio.ds][ticker]
+            prices[ticker] = self.exchange.price_df.loc[portfolio.ds][ticker]
         total = portfolio.get_positions_df()['value'].sum()
 
         delta_weights = {}
@@ -138,7 +137,7 @@ class Strategy2:
 class Strategy3:
     def __init__(self, exchange, schedule):
         self.exchange = exchange
-        self.price_df = exchange.get_price_df()
+        self.price_df = exchange.price_df
         self.schedule = 'M'
 
     def compute_actual_weights(self, portfolio):
@@ -185,7 +184,7 @@ class Strategy3:
 
         prices = {'Cash': 1.}
         for ticker in tickers:
-            prices[ticker] = self.price_df.loc[portfolio.ds][ticker]
+            prices[ticker] = exchange.price_df.loc[portfolio.ds][ticker]
         total = portfolio.get_positions_df()['value'].sum()
 
         delta_weights = {}

@@ -1,29 +1,21 @@
+import numpy as np
 import pandas as pd
 
 class Exchange:
-    
-    price_df = None
-    
     def __init__(self, price_filepath):
         """Takes csv of closing prices and simulates exchange"""
-        self.price_df = pd.read_csv(price_filepath, index_col=0,
-                                     parse_dates=True)
-        
-        # self.prices = self.price_df.loc[pd.to_datetime(start_dt):
-        #                                     pd.to_datetime(end_dt)]
-        
-    def get_price_df(self, start_dt, end_dt):
-        prices = self.price_df.loc[pd.to_datetime(start_dt):pd.to_datetime(end_dt)]
-        return prices  
-    
-    def is_end_of_month(self, date):
-        date_ts = pd.to_datetime(date)
-        all_dates = self.price_df.index
-        mmyyyy = all_dates.strftime('%Y%m')
-        dates_dict = all_dates.groupby(mmyyyy)
-        eom_dates = [max(dates_dict[month]) for month in dates_dict.keys()] 
-        return date_ts in eom_dates
-    
+        self.price_df = self._create_price_df(price_filepath)
+
+    def _create_price_df(self, price_filepath):
+        price_df = pd.read_csv(price_filepath)
+        price_df['Date'] = pd.to_datetime(price_df.Date)
+        price_df['mmyyyy'] = price_df.Date.apply(lambda dt: dt.strftime('%Y%m'))
+        price_df['lead_mmyyyy'] = price_df.mmyyyy.shift(-1)
+        price_df['eobm'] = price_df.mmyyyy != price_df.lead_mmyyyy
+        price_df.iloc[-1]['eobm'] = np.nan  # TODO:Need another way for last dt
+        price_df.set_index('Date', inplace=True)
+        return price_df
+
     def get_price(self, ds, ticker):
         if ticker not in self.price_df.columns:
             raise KeyError("Try again: Ticker not found")
