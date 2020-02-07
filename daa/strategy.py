@@ -135,14 +135,16 @@ class Strategy2:
         return shares_to_trade
     
 class Strategy3:
-    def __init__(self, exchange, schedule):
+    def __init__(self, exchange, schedule, ticker_dict, lookback):
         self.exchange = exchange
         self.price_df = exchange.price_df
-        self.schedule = 'M'
+        self.ma_df = self.price_df.rolling(lookback).mean()
+        self.tickers = list(ticker_dict.keys())
+        self.momentum_flags = list(ticker_dict.values())
+        self.lookback = lookback
+        self.schedule = 'D'
 
     def compute_actual_weights(self, portfolio):
-        tickers = ['SPX_Index', 'EAFE_Index', 'IG_Corps_Index',
-                   'Tsy_Index', 'MBS_Index']
         total = 0
         value_dict = {} 
         purchased_tickers = portfolio.get_positions_df().index.to_list()  
@@ -152,7 +154,7 @@ class Strategy3:
                                            .loc[ticker]['value'])
             total += value_dict[ticker]
 
-        for ticker in [t for t in tickers if t not in purchased_tickers]:
+        for ticker in [t for t in self.tickers if t not in purchased_tickers]:
             value_dict[ticker] = 0.0
 
         for ticker in value_dict.keys():
@@ -162,16 +164,21 @@ class Strategy3:
 
     def compute_target_weights(self, portfolio):
         target_dict = defaultdict(lambda: 0.)
-        target_dict['Cash'] = 0.0
-        target_dict['SPX_Index'] = 1.0 
-        target_dict['AGG_Index'] = 0.0
 
-        tr_cape = self.get_trcape(portfolio)
-        
-        # TODO (baogorek): reminder that tickers must be typed 3 times
-        if tr_cape > 16:
-           target_dict['SPX_Index'] = np.exp(-(tr_cape - 16)**2 / 40)
-           target_dict['AGG_Index'] = 1. - target_dict['SPX_Index']
+        momos = [t[0] for t in zip(self.tickers, self.momentum_flags) if t[1]]
+        no_momos = [t for t in self.tickers if t not in momos]
+
+        for ticker in momos:
+            print(ticker)
+            price = self.exchange.get_price(portfolio.ds, ticker)
+            if price > self.ma_df.loc[portfolio.ds, self.tickers[i]] - 100000:
+                target_dict[ticker] = 1.0
+        momo_sum = sum(target_dict.values())
+        if momo_sum > 1.0: 
+            target_dict.update((x, y / momo_sum) for x, y in target_dict.items())
+        if momo_sum = 0.0:
+            # TODO(baogorek): Flip signs for non-momos
+            #if sum(target_dict.values()) == 0:
 
         return target_dict
 
