@@ -40,3 +40,25 @@ class Strategy2Test(unittest.TestCase):
 
 # TODO(baogorek): 1. Fix data source issue, 2. make tests runnable with pytest
 
+class Strategy3Test(unittest.TestCase):
+
+    def setUp(self):
+        cwd = 'test'
+        start_dt = '1999-01-04'
+        end_dt = '2001-12-31'
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        portfolio = Portfolio(start_dt, exchange, 1000000, 0)
+
+
+        strategy = Strategy3(exchange, 'M', {'SPX_Index': 1, 'Tsy_Index': 0, 'EM_Index': 1}, 200)
+
+        backtest = Backtest(portfolio, exchange, strategy)
+        backtest.run(end_dt)
+        
+        portfolio.get_trade_blotter()
+        portfolio.get_positions_df()
+        strategy.get_trcape(portfolio)
+
+
+if __name__ == '__main__':
+    unittest.main()
