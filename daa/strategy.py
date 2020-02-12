@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import defaultdict
+import pdb
 
 class Strategy1:
     def __init__(self, exchange, schedule):
@@ -35,26 +36,50 @@ class Strategy1:
         return target_dict
 
     def calculate_trades(self, portfolio):
-        
-        actual_weights = self.compute_actual_weights(portfolio)
+        #pdb.set_trace()
+        value = portfolio.get_positions_df()['value'].sum()
+        portfolio_shares = portfolio.get_positions_df()['quantity']
         target_weights = self.compute_target_weights(portfolio)
 
         tickers = set(target_weights.keys()) - {'Cash'}
         
-        prices = {'Cash': 1.}
-        for ticker in tickers:
-            prices[ticker] = self.exchange.get_price(portfolio.ds, ticker)
-        total = portfolio.get_positions_df()['value'].sum()
-
-        delta_weights = {}
         shares_to_trade = {}
+
         for ticker in tickers:
-            delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
-            shares = np.floor(total * delta_weights[ticker] / prices[ticker])
-            if np.abs(shares) > 0:
-                shares_to_trade[ticker] = shares
+            price = self.exchange.price_df.loc[portfolio.ds][ticker]
+            target_shares = np.floor(value * target_weights[ticker] / price)
+
+            current_shares = 0
+            if ticker in portfolio_shares.index.to_list():
+                current_shares = portfolio_shares[ticker] 
+
+            if target_shares != current_shares:
+                shares_to_trade[ticker] = target_shares - current_shares
 
         return shares_to_trade
+
+    #def calculate_trades(self, portfolio):
+    #    
+    #    actual_weights = self.compute_actual_weights(portfolio)
+    #    target_weights = self.compute_target_weights(portfolio)
+
+    #    tickers = set(target_weights.keys()) - {'Cash'}
+    #    
+    #    prices = {'Cash': 1.}
+    #    for ticker in tickers:
+    #        prices[ticker] = self.exchange.get_price(portfolio.ds, ticker)
+    #    total = portfolio.get_positions_df()['value'].sum()
+
+    #    delta_weights = {}
+    #    shares_to_trade = {}
+    #    for ticker in tickers:
+    #        delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
+    #        shares = total * delta_weights[ticker] / prices[ticker]
+    #        shares = np.sign(shares) * np.floor(np.abs(shares))
+    #        if np.abs(shares) > 0:
+    #            shares_to_trade[ticker] = shares
+
+    #    return shares_to_trade
 
 class Strategy2:
     def __init__(self, exchange, schedule):
@@ -111,28 +136,28 @@ class Strategy2:
         return target_dict
 
     def calculate_trades(self, portfolio):
-        
-        actual_weights = self.compute_actual_weights(portfolio)
+        #pdb.set_trace()
+        value = portfolio.get_positions_df()['value'].sum()
+        portfolio_shares = portfolio.get_positions_df()['quantity']
         target_weights = self.compute_target_weights(portfolio)
 
-        tickers = set(actual_weights.keys()) - {'Cash'}
-
-        prices = {'Cash': 1.}
-        for ticker in tickers:
-            prices[ticker] = self.exchange.price_df.loc[portfolio.ds][ticker]
-        total = portfolio.get_positions_df()['value'].sum()
-
-        delta_weights = {}
+        tickers = set(target_weights.keys()) - {'Cash'}
+        
         shares_to_trade = {}
+
         for ticker in tickers:
-            delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
-            shares = np.floor(total * delta_weights[ticker] / prices[ticker])
-            if shares * prices[ticker] > portfolio.cash_balance:
-                shares -= 1
-            if np.abs(shares) > 0:
-                shares_to_trade[ticker] = shares
+            price = self.exchange.price_df.loc[portfolio.ds][ticker]
+            target_shares = np.floor(value * target_weights[ticker] / price)
+
+            current_shares = 0
+            if ticker in portfolio_shares.index.to_list():
+                current_shares = portfolio_shares[ticker] 
+
+            if target_shares != current_shares:
+                shares_to_trade[ticker] = target_shares - current_shares
 
         return shares_to_trade
+
     
 class Strategy3:
     def __init__(self, exchange, schedule, ticker_dict, lookback):
@@ -169,39 +194,40 @@ class Strategy3:
         no_momos = [t for t in self.tickers if t not in momos]
 
         for ticker in momos:
-            print(ticker)
             price = self.exchange.get_price(portfolio.ds, ticker)
-            if price > self.ma_df.loc[portfolio.ds, self.tickers[i]] - 100000:
+            if price > self.ma_df.loc[portfolio.ds, ticker]:
                 target_dict[ticker] = 1.0
+            else:
+                target_dict[ticker] = 0.0
         momo_sum = sum(target_dict.values())
         if momo_sum > 1.0: 
             target_dict.update((x, y / momo_sum) for x, y in target_dict.items())
-        if momo_sum = 0.0:
-            # TODO(baogorek): Flip signs for non-momos
-            #if sum(target_dict.values()) == 0:
+        elif momo_sum == 0.0:
+            for ticker in no_momos:
+                target_dict[ticker] = 1.0 / len(no_momos)
 
         return target_dict
 
     def calculate_trades(self, portfolio):
-        
-        actual_weights = self.compute_actual_weights(portfolio)
+        #pdb.set_trace()
+        value = portfolio.get_positions_df()['value'].sum()
+        portfolio_shares = portfolio.get_positions_df()['quantity']
         target_weights = self.compute_target_weights(portfolio)
 
-        tickers = set(actual_weights.keys()) - {'Cash'}
-
-        prices = {'Cash': 1.}
-        for ticker in tickers:
-            prices[ticker] = exchange.price_df.loc[portfolio.ds][ticker]
-        total = portfolio.get_positions_df()['value'].sum()
-
-        delta_weights = {}
+        tickers = set(target_weights.keys()) - {'Cash'}
+        
         shares_to_trade = {}
+
         for ticker in tickers:
-            delta_weights[ticker] = target_weights[ticker] - actual_weights[ticker]
-            shares = np.floor(total * delta_weights[ticker] / prices[ticker])
-            if shares * prices[ticker] > portfolio.cash_balance:
-                shares -= 1
-            if np.abs(shares) > 0:
-                shares_to_trade[ticker] = shares
+            price = self.exchange.price_df.loc[portfolio.ds][ticker]
+            target_shares = np.floor(value * target_weights[ticker] / price)
+
+            current_shares = 0
+            if ticker in portfolio_shares.index.to_list():
+                current_shares = portfolio_shares[ticker] 
+
+            if target_shares != current_shares:
+                shares_to_trade[ticker] = target_shares - current_shares
 
         return shares_to_trade
+#TODO: see backtester TODO on itertuples

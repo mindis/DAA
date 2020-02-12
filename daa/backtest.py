@@ -64,9 +64,8 @@ class Backtest:
         pbar = tqdm(total = timedelta)
         
         for row in price_df.itertuples():
-            self.portfolio.ds = row[0]
+            self.portfolio.ds = row[0] # Move the portfolio to the next business day
             if price_df.loc[self.portfolio.ds].eobm:
-                # TODO: consider this code below for exchange or broker class
                 trades = self.strategy.calculate_trades(self.portfolio)
                 for ticker in trades.keys():
                     side = 'buy' if trades[ticker] > 0 else 'sell'
