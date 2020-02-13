@@ -71,12 +71,10 @@ class Portfolio:
             total_value = price * quantity
             if side == 'buy':
                 if total_value > self.cash_balance:
-                    quantity -= 1
-                    # TODO 
                     print(self.get_positions_df())
                     print(f"Couldn't buy {quantity} of {ticker} on {self.ds}")
                     print(f"Tried to buy {total_value}s worth with {self.cash_balance}")
-                    total_value = price * quantity
+                    raise ValueError('Not enough shares!')
 
                 self.trade_id += 1
                 self.cash_balance -= total_value 

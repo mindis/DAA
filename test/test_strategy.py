@@ -11,14 +11,15 @@ class StrategyTest(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'testdata/PriceData.csv'))
-
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        start_dt = '1999-01-04'
+        end_dt = '2005-12-31'
         # Day 1
-        portfolio = Portfolio('2019-01-01', exchange, 100000, 0)
+        portfolio = Portfolio(start_dt, exchange, 100000, 0)
         strategy = Strategy1(exchange, 'M')
 
         backtest = Backtest(portfolio, exchange, strategy)
-        backtest.run('2019-09-02')
+        backtest.run(end_dt)
 
         portfolio.get_positions_df()
            
