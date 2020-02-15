@@ -145,7 +145,12 @@ class Strategy3:
         self.tickers = list(ticker_dict.keys())
         self.momentum_flags = list(ticker_dict.values())
         self.lookback = lookback
-        self.schedule = 'D'
+        self.schedule = schedule 
+        self.check_validity()
+
+    def check_validity(self):
+        if self.schedule not in ['D', 'M']:
+            raise ValueError('Choose Daily "D" or Monthly "M" schedules')
 
     def compute_actual_weights(self, portfolio):
         total = 0

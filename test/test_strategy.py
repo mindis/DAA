@@ -28,7 +28,7 @@ class Strategy2Test(unittest.TestCase):
     def setUp(self):
         cwd = 'test'
         start_dt = '1999-01-04'
-        end_dt = '2001-12-31'
+        end_dt = '2001-09-03'
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
         portfolio = Portfolio(start_dt, exchange, 1000000, 0)
         strategy = Strategy2(exchange, 'M')
@@ -48,13 +48,12 @@ class Strategy3Test(unittest.TestCase):
         start_dt = '1996-01-04'
         end_dt = '2001-10-30'
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-        portfolio = Portfolio(start_dt, exchange, 1000000, 0)
 
-        strategy = Strategy3(exchange, 'M',
+        strategy = Strategy3(exchange, 'D',
                 {'SPX_Index': 1, 'Tsy_Index': 0, 'EM_Index': 1, 'MBS_Index': 0}, 200)
 
-        backtest = Backtest(portfolio, exchange, strategy)
-        backtest.run(end_dt)
+        backtest = Backtest(exchange, strategy, start_dt, end_dt)
+        backtest.run()
         
         portfolio.get_trade_blotter()
         portfolio.get_positions_df()

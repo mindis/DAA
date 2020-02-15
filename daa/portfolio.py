@@ -33,7 +33,8 @@ class Portfolio:
     def get_positions_df(self):
         """Returns a dataframe indexed by ticker"""
         positions_df = pd.DataFrame({'quantity': self.cash_balance, 
-                                     'value': self.cash_balance},
+                                     'value': self.cash_balance,
+                                     'price': 1.0, 'wgt': 1.0},
                                     index=['Cash'])
         
         positions_df.index.name = 'ticker'

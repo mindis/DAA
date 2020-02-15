@@ -8,64 +8,96 @@ import pdb
 from pandas.plotting import register_matplotlib_converters
 import matplotlib.pyplot as plt
 
+from daa.portfolio import Portfolio
+
 pd.options.mode.chained_assignment = None
 register_matplotlib_converters()
 
 class Backtest:
     """Facilitates backtesting strategy on porfolio given exchange"""
-    def __init__(self, portfolio, exchange, strategy):
+    def __init__(self, exchange, strategy, start_dt, end_dt, start_cash=1E6):
         
-        self.portfolio = portfolio
+        self.portfolio = Portfolio(start_dt, exchange, start_cash, 0)
         self.exchange = exchange
         self.strategy = strategy
         self.value_df = pd.DataFrame()
-        self.update_value_df() 
-           
+        self.start_dt = start_dt
+        self.end_dt = end_dt
+        self.start_cash = start_cash
+        if pd.to_datetime(end_dt) <= pd.to_datetime(start_dt):
+            raise ValueError('end_dt must be after current portfolio date!')
+        self.sp500_benchmark = self.run_sp500_benchmark()
+
     def update_value_df(self):
         update = self.portfolio.get_positions_df().reset_index()
         update['Date'] = self.portfolio.ds
         update.set_index('Date', inplace=True)
-        # TODO: is drop duplicates the best way to ensure cash isn't added twice?
-        self.value_df = pd.concat([self.value_df, update], 
-                                  sort=False).drop_duplicates()
+        self.value_df = pd.concat([self.value_df, update], sort=False)
 
     def plot_total_return(self):
-        plt.plot(self.value_df.groupby('Date').sum()['value'])
+        plt.plot(self.value_df.groupby('Date').sum()['value'],
+                 label = type(self.strategy).__name__)
+        plt.plot(self.sp500_benchmark, label = 'S&P500')
+        plt.legend()
         plt.title('Cumulative Growth of Initial Investment')
         plt.show()
         
-    def calc_performance(self, freq):
+    def calc_performance(self):
         """ Calculate performance statistics
         Parameters:
         freq (int): 4 for qtrly, 12 for monthly, 252 for daily
         df (dataframe): dataframe of returns specified by the frequency
         """
         total_value = self.value_df.groupby('Date')['value'].sum()
-        returns = total_value.pct_change().dropna()
-        stats = pd.DataFrame(columns = ['Model'], index=['Ann. Returns', 'Ann. Vol', 
-                          'Sharpe','Downside Vol', 'Sortino', 'Max 12M Drawdown'])
-        stats.iloc[0] = returns.mean() * freq
-        stats.iloc[1] = returns.std() * sqrt(freq)
-        stats.iloc[2] = (returns.mean()*freq) / (returns.std()*sqrt(freq))
-        lpm = returns.clip(upper=0) 
-        stats.iloc[3] = (lpm.loc[(lpm != 0)]).std() * sqrt(freq)
-        stats.iloc[4] = (returns.mean()*freq) / ((lpm.loc[(lpm != 0)]).std()*sqrt(freq))
-        stats.iloc[5] = ((1+returns).rolling(freq).apply(np.prod, raw=False) - 1).min()
+        strategy_returns = total_value.pct_change().dropna()
+        benchmark_returns = self.sp500_benchmark.pct_change().dropna()
+        returns = pd.concat([strategy_returns, benchmark_returns], axis=1)
 
+        stats = pd.DataFrame(columns = [type(self.strategy).__name__,
+                                        'Benchmark'],
+                             index=['Ann. Returns', 'Ann. Vol', 'Sharpe',
+                                    'Downside Vol', 'Sortino'])
+
+        inferred_freq = pd.infer_freq(returns.index)
+        if inferred_freq == 'B':
+            freq = 252
+        elif inferred_freq == 'M':
+            freq = 12
+        else:
+            raise ValueError(f'We have not seen a freq like {inferred_freq}!')
+       
+        stats.iloc[0, :] = returns.mean().values * freq
+        stats.iloc[1, :] = returns.std().values * sqrt(freq)
+        stats.iloc[2, :] = ((returns.mean().values*freq)
+                            / (returns.std().values*sqrt(freq)))
+        stats.iloc[3, :] = returns.apply(lambda col:
+                                         np.std(col[col < 0])).values * sqrt(freq)
+        stats.iloc[4, :] = stats.iloc[0, :] / stats.iloc[3, :]
+        # TODO(baogorek): Implement drawdown
         return stats
 
-    def run(self, end_dt):
-        """Runs strategy on portfolio until end_dt"""
-        if pd.to_datetime(end_dt) <= self.portfolio.ds:
-            raise ValueError('end_dt must be after current portfolio date!')
+    def run_sp500_benchmark(self):
+        price_df = self.exchange.price_df.loc[self.portfolio.ds:self.end_dt]
+        spx_prices = price_df['SPX_Index']
+        initial_qty = self.start_cash / spx_prices[0]  # partial shares allowed
+        benchmark_value = spx_prices * initial_qty
+        return benchmark_value               
+       
 
-        price_df = self.exchange.price_df.loc[self.portfolio.ds:end_dt]
+    def run(self):
+        """Runs strategy on portfolio until end_dt"""
+        price_df = self.exchange.price_df.loc[self.portfolio.ds:self.end_dt]
         timedelta = len(price_df)
         pbar = tqdm(total = timedelta)
         
         for row in price_df.itertuples():
-            self.portfolio.ds = row[0] # Move the portfolio to the next business day
-            if price_df.loc[self.portfolio.ds].eobm:
+            self.portfolio.ds = row[0] # Move to the next business day
+
+            trade_ind = True # schedule == 'D'
+            if self.strategy.schedule == 'M':
+                trade_ind = price_df.loc[self.portfolio.ds].eobm
+
+            if trade_ind:
                 trades = self.strategy.calculate_trades(self.portfolio)
                 for ticker in trades.keys():
                     side = 'buy' if trades[ticker] > 0 else 'sell'
@@ -77,6 +109,6 @@ class Backtest:
             self.update_value_df()
         
         pbar.close()
-        print(f'backtest_finished. It is now {end_dt}')
+        print(f'backtest_finished. It is now {self.end_dt}')
         self.plot_total_return()
-        print(self.calc_performance(252))
+        print(self.calc_performance())
