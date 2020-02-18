@@ -7,6 +7,7 @@ from daa.portfolio import *
 from daa.exchange import *
 from daa.backtest import *
 
+
 class StrategyTest(unittest.TestCase):
 
     def setUp(self):

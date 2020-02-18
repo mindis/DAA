@@ -11,29 +11,11 @@ class Strategy(ABC):
         self.exchange = exchange
         self.price_df = exchange.price_df
         self.schedule = schedule 
-        self.check_validity()
+        self.check_schedule_validity()
 
-    def check_validity(self):
+    def check_schedule_validity(self):
         if self.schedule not in ['D', 'M']:
             raise ValueError('Choose Daily "D" or Monthly "M" schedules')
-
-    def compute_actual_weights(self, portfolio):
-        total = 0
-        value_dict = {} 
-        purchased_tickers = portfolio.get_positions_df().index.to_list()  
-
-        for ticker in purchased_tickers:
-            value_dict[ticker] = (portfolio.get_positions_df()
-                                           .loc[ticker]['value'])
-            total += value_dict[ticker]
-
-        for ticker in [t for t in self.tickers if t not in purchased_tickers]:
-            value_dict[ticker] = 0.0
-
-        for ticker in value_dict.keys():
-            value_dict[ticker] = value_dict[ticker] / total
-
-        return value_dict
 
     @abstractmethod
     def compute_target_weights(self, portfolio):
