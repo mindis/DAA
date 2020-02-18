@@ -64,29 +64,9 @@ class Strategy(ABC):
         return shares_to_trade
 
 
-class BasicStrategy:
+class BasicStrategy(Strategy):
     def __init__(self, exchange, schedule):
-        self.exchange = exchange
-        self.schedule = 'M'
-
-    def compute_actual_weights(self, portfolio):
-        tickers = ['SPX_Index', 'EAFE_Index', 'EM_Index']
-        total = 0
-        value_dict = {} 
-        purchased_tickers = portfolio.get_positions_df().index.to_list()  
-
-        for ticker in purchased_tickers:
-            value_dict[ticker] = (portfolio.get_positions_df()
-                                           .loc[ticker]['value'])
-            total += value_dict[ticker]
-
-        for ticker in [t for t in tickers if t not in purchased_tickers]:
-            value_dict[ticker] = 0.0
-
-        for ticker in value_dict.keys():
-            value_dict[ticker] = value_dict[ticker] / total
-
-        return value_dict
+        super().__init__(exchange, schedule)
 
     def compute_target_weights(self, portfolio):
         target_dict = defaultdict(lambda: 0.)
@@ -96,52 +76,10 @@ class BasicStrategy:
         target_dict['EM_Index'] =.50
         return target_dict
 
-    def calculate_trades(self, portfolio):
-        value = portfolio.get_positions_df()['value'].sum()
-        portfolio_shares = portfolio.get_positions_df()['quantity']
-        target_weights = self.compute_target_weights(portfolio)
-
-        tickers = set(target_weights.keys())
-        tickers = tickers.union(portfolio.get_positions_df().index.tolist())
-        tickers = tickers - {'Cash'}
-        shares_to_trade = {}
-
-        for ticker in tickers:
-            price = self.exchange.price_df.loc[portfolio.ds][ticker]
-            target_shares = np.floor(value * target_weights[ticker] / price)
-            current_shares = 0
-            
-            if ticker in portfolio_shares.index.to_list():
-                current_shares = portfolio_shares[ticker] 
-
-            if target_shares != current_shares:
-                shares_to_trade[ticker] = target_shares - current_shares
-
-        return shares_to_trade
-
 
 class CAPEStrategy(Strategy):
     def __init__(self, exchange, schedule):
         super().__init__(exchange, schedule)
-
-    def compute_actual_weights(self, portfolio):
-        tickers = ['SPX_Index', 'AGG_Index']
-        total = 0
-        value_dict = {} 
-        purchased_tickers = portfolio.get_positions_df().index.to_list()  
-
-        for ticker in purchased_tickers:
-            value_dict[ticker] = (portfolio.get_positions_df()
-                                           .loc[ticker]['value'])
-            total += value_dict[ticker]
-
-        for ticker in [t for t in tickers if t not in purchased_tickers]:
-            value_dict[ticker] = 0.0
-
-        for ticker in value_dict.keys():
-            value_dict[ticker] = value_dict[ticker] / total
-
-        return value_dict
 
     def get_trcape(self, portfolio):
         """Compute Shiller's TRCape metric""" 

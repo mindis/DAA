@@ -33,7 +33,6 @@ class MomentumStrategyTest(unittest.TestCase):
     def setUp(self):
         cwd = 'test'
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-
         strategy = MomentumStrategy(exchange, 'D',
             {'SPX_Index': 1, 'Tsy_Index': 0, 'EM_Index': 1, 'MBS_Index': 0},
             200)
