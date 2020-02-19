@@ -1,42 +1,46 @@
 import os
 import unittest
 
-from daa.strategy import Strategy1, Strategy2
+from daa.strategy import *
 from daa.utils import *
 from daa.portfolio import *
 from daa.exchange import *
 from daa.backtest import *
 
+
 class StrategyTest(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'testdata/PriceData.csv'))
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        strategy = BasicStrategy(exchange, 'M')
 
-        # Day 1
-        portfolio = Portfolio('2019-01-01', exchange, 100000, 0)
-        strategy = Strategy1(exchange, 'M')
+        backtest = Backtest(exchange, strategy, '1999-04-04', '2005-12-31')
+        backtest.run()
 
-        backtest = Backtest(portfolio, exchange, strategy)
-        backtest.run('2019-09-02')
 
-        portfolio.get_positions_df()
-           
-class Strategy2Test(unittest.TestCase):
+class CAPEStrategyTest(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        start_dt = '1999-01-04'
-        end_dt = '2001-12-31'
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-        portfolio = Portfolio(start_dt, exchange, 1000000, 0)
-        strategy = Strategy2(exchange, 'M')
-        backtest = Backtest(portfolio, exchange, strategy)
-        backtest.run(end_dt)
+        strategy = CAPEStrategy(exchange, 'M')
+        backtest = Backtest(exchange, strategy, '1999-01-04', '2001-09-03')
+        backtest.run()
         
-        portfolio.get_trade_blotter()
-        portfolio.get_positions_df()
-        strategy.get_trcape(portfolio)
 
-# TODO(baogorek): 1. Fix data source issue, 2. make tests runnable with pytest
+class MomentumStrategyTest(unittest.TestCase):
 
+    def setUp(self):
+        cwd = 'test'
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+        strategy = MomentumStrategy(exchange, 'D',
+            {'SPX_Index': 1, 'Tsy_Index': 0, 'EM_Index': 1, 'MBS_Index': 0},
+            200)
+
+        backtest = Backtest(exchange, strategy, '1996-01-04', '2001-10-30')
+        backtest.run()
+
+
+if __name__ == '__main__':
+    unittest.main()

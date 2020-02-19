@@ -33,7 +33,8 @@ class Portfolio:
     def get_positions_df(self):
         """Returns a dataframe indexed by ticker"""
         positions_df = pd.DataFrame({'quantity': self.cash_balance, 
-                                     'value': self.cash_balance},
+                                     'value': self.cash_balance,
+                                     'price': 1.0, 'wgt': 1.0},
                                     index=['Cash'])
         
         positions_df.index.name = 'ticker'
@@ -71,7 +72,10 @@ class Portfolio:
             total_value = price * quantity
             if side == 'buy':
                 if total_value > self.cash_balance:
-                    raise ValueError('Not enough cash!')
+                    print(self.get_positions_df())
+                    print(f"Couldn't buy {quantity} of {ticker} on {self.ds}")
+                    print(f"Tried to buy {total_value}s worth with {self.cash_balance}")
+                    raise ValueError('Not enough shares!')
 
                 self.trade_id += 1
                 self.cash_balance -= total_value 
