@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
-
+import pdb
 
 class Strategy(ABC):
     """An abstract class from which to create strategies as children"""
@@ -127,3 +127,48 @@ class MomentumStrategy(Strategy):
                raise ValueError("Security weight less than 0.")
                    
         return target_dict
+
+
+class MinimumVarianceStrategy(Strategy):
+    def __init__(self, exchange, schedule, tickers):
+        super().__init__(exchange, schedule)
+
+        self.tickers = tickers
+
+        # TODO(baogorek): find solution to prices that don't change daily
+        good_data = exchange.price_df[tickers].loc['1996-01-01':]
+        self.returns = good_data.pct_change().dropna()
+
+    def compute_target_weights(self, portfolio):
+        pdb.set_trace()
+        target_dict = defaultdict(lambda: 0.)
+
+        Sigma = self.returns.loc[:portfolio.ds].cov().to_numpy()
+        e = np.ones(Sigma.shape[0])
+        Sigma_inv = np.linalg.inv(Sigma)
+
+        w = np.matmul(Sigma_inv, e) / np.matmul(e, np.matmul(Sigma_inv, e))
+        for ticker, weight in zip(self.tickers, w):
+            target_dict[ticker] = weight
+
+        return target_dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
