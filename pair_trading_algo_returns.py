@@ -86,7 +86,7 @@ plt.show()
 
 # Plot price ratio of Industrials/Materials
 S1 = SPX_sectors['Indu']
-S2 = SPX_sectors['Matr']
+S2 = SPX_sectors['Utils']
 score, pvalue, _ = coint(S1, S2)
 print(pvalue)
 ratios = S1 / S2
@@ -106,14 +106,14 @@ plt.legend(['Ratio z-score', 'Mean', '+1', '-1'])
 plt.show()
 
 # Create price ratios
-ratios = SPX_sectors['Indu'] / SPX_sectors['Matr']
+ratios = S1 / S2
 oos_len = len(ratios) - 252*3
 train = ratios[:oos_len]
 test = ratios[oos_len:]
-S1_train = SPX_sectors['Indu'].iloc[:oos_len]
-S2_train = SPX_sectors['Matr'].iloc[:oos_len]
-S1_test = SPX_sectors['Indu'].iloc[oos_len:]
-S2_test = SPX_sectors['Matr'].iloc[oos_len:]
+S1_train = S1.iloc[:oos_len]
+S2_train = S2.iloc[:oos_len]
+S1_test = S1.iloc[oos_len:]
+S2_test = S2.iloc[oos_len:]
 
 # Create labels
 ratios_mavg5 = train.rolling(window=5,
@@ -187,7 +187,7 @@ sellR[window:].plot(color='r', linestyle='None', marker='^')
 x1,x2,y1,y2 = plt.axis()
 plt.axis((x1,x2,min(S1_train.min(),S2_train.min()),max(S1_train.max(),S2_train.max())))
 
-plt.legend(['Indu','Matr', 'Buy Signal', 'Sell Signal'])
+plt.legend(['Indu','Utils', 'Buy Signal', 'Sell Signal'])
 plt.show()
 
 # Trade using a simple strategy
@@ -246,58 +246,76 @@ def trade(S1, S2, window1, window2, signal):
             rets = pd.concat([rets,dret])
             
     daily_returns = rets.rename('DailyReturns')
-    cumulative_returns = pd.Series(np.cumprod(1 + daily_returns.values), 
+    
+    return daily_returns
+
+daily_returns = trade(S1_train, S2_train, 5, 32, 1.5)
+
+ann_mean = daily_returns.mean() * 252
+ann_vol = daily_returns.std() * np.sqrt(252)
+sharpe = ann_mean/ann_vol
+
+cum_returns = pd.Series(np.cumprod(1 + daily_returns.values), 
                                    index=daily_returns.index).rename('TR')
-    
-    money = cumulative_returns[-1] 
-    
-    return money, daily_returns, cumulative_returns
+
 
 # Find the window length 0-254 
 # that gives the highest returns using this strategy
-total_money = [trade(S1_train, 
-                S2_train, 5, l, 1.5) 
-                for l in range(255)]
 
-best_length = np.argmax(total_money)
+scores = pd.Series()
+for l in range(20,255,5):
+    
+    rets = trade(S1_train, S2_train, 5, l, 1.5)
+    ann_mean = rets.mean() * 252
+    ann_vol = rets.std() * np.sqrt(252)
+    sharpe = ann_mean/ann_vol
+    
+    score = pd.Series(sharpe, index=[l])    
+    scores = pd.concat([scores,score])
+    
+#length_scores = [trade(S1_train, 
+#                S2_train, 5, l, 1.5) 
+#                for l in range(20,255,5)]
+
+best_length = np.argmax(scores)
+
 print ('Best window length:', best_length)
 
-money, daily_returns, cum_returns = trade(S1_train, S2_train, 5, 32, 1.5)
-
-plt.figure(figsize=(15,7))
-plt.plot(cum_returns.index, cum_returns.values)
-plt.ylabel('TR')
-plt.title('Cumulative Returns: Indu v. Matr')
-plt.show()
-
-money, daily_returns, cum_returns = trade(S1_test, S2_test, 5, 32, 1.5)
-
-#OOS Test
-plt.figure(figsize=(15,7))
-plt.plot(cum_returns.index, cum_returns.values)
-plt.ylabel('TR')
-plt.title('OOS Test Cumulative Returns: Indu v. Matr')
-plt.show()
-
-# Find the returns for test data
-# using what we think is the best window length
-length_scores2 = [trade(S1_test, 
-                  S2_test, 5, l, 1.5) 
-                  for l in range(255)]
-
-print (best_length, 'day window:', length_scores2[best_length])
-
-# Find the best window length based on this dataset, 
-# and the returns using this window length
-best_length2 = np.argmax(length_scores2)
-print (best_length2, 'day window:', length_scores2[best_length2])
-
-plt.figure(figsize=(15,7))
-plt.plot(length_scores)
-plt.plot(length_scores2)
-plt.xlabel('Window length')
-plt.ylabel('Score')
-plt.legend(['Training', 'Test'])
-plt.show()
-
-
+#
+#plt.figure(figsize=(15,7))
+#plt.plot(cum_returns.index, cum_returns.values)
+#plt.ylabel('TR')
+#plt.title('Cumulative Returns: Indu v. Utils')
+#plt.show()
+#
+#money, daily_returns, cum_returns = trade(S1_test, S2_test, 5, 32, 1.5)
+#
+##OOS Test
+#plt.figure(figsize=(15,7))
+#plt.plot(cum_returns.index, cum_returns.values)
+#plt.ylabel('TR')
+#plt.title('OOS Test Cumulative Returns: Indu v. Matr')
+#plt.show()
+#
+## Find the returns for test data
+## using what we think is the best window length
+#length_scores2 = [trade(S1_test, 
+#                  S2_test, 5, l, 1.5) 
+#                  for l in range(30,50)]
+#
+#print (best_length, 'day window:', length_scores2[best_length])
+#
+## Find the best window length based on this dataset, 
+## and the returns using this window length
+#best_length2 = np.argmax(length_scores2)
+#print (best_length2, 'day window:', length_scores2[best_length2])
+#
+#plt.figure(figsize=(15,7))
+#plt.plot(length_scores)
+#plt.plot(length_scores2)
+#plt.xlabel('Window length')
+#plt.ylabel('Score')
+#plt.legend(['Training', 'Test'])
+#plt.show()
+#
+#
