@@ -13,7 +13,6 @@ class StrategyTest(unittest.TestCase):
     def setUp(self):
         cwd = 'test'
         exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-        im
         strategy = BasicStrategy(exchange, 'M')
 
         backtest = Backtest(exchange, strategy, '1999-04-04', '2005-12-31')
@@ -39,7 +38,7 @@ class MomentumStrategyTest(unittest.TestCase):
             {'SPX_Index': 1, 'Tsy_Index': 0, 'EM_Index': 1, 'MBS_Index': 0},
             100)
 
-        backtest = Backtest(exchange, strategy, '1996-01-04', '2011-10-30')
+        backtest = Backtest(exchange, strategy, '1996-01-04', '2003-10-30')
         backtest.run()
 
 class MinimumVarianceStrategyTest(unittest.TestCase):
@@ -52,6 +51,19 @@ class MinimumVarianceStrategyTest(unittest.TestCase):
 
         backtest = Backtest(exchange, strategy, '1998-01-04', '2011-10-30')
         backtest.run()
+
+class MaxSharpeStrategyTest(unittest.TestCase):
+
+    def setUp(self):
+        cwd = 'test'
+        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
+
+        strategy = MaxSharpeStrategy(exchange, 'M',
+         ['SPX_Index', 'EM_Index', 'Large_Value_Index', 'AGG_Index'], 252)
+
+        backtest = Backtest(exchange, strategy, '1998-01-04', '2018-10-30')
+        backtest.run()
+
 
 
 
