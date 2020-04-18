@@ -5,12 +5,12 @@ import yfinance as yf
 
 data = yf.download(  # or pdr.get_data_yahoo(...
         # tickers list or string as well
-        tickers = "SPY AGG MBB",
+        tickers = "SPY EEM AGG",
 
         # use "period" instead of start/end
         # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
         # (optional, default is '1mo')
-        period = "10y",
+        period = "max",
 
         # fetch data by interval (including intraday if period < 60 days)
         # valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
@@ -23,7 +23,7 @@ data = yf.download(  # or pdr.get_data_yahoo(...
 
         # adjust all OHLC automatically
         # (optional, default is False)
-        auto_adjust = True,
+        auto_adjust = False,
 
         # download pre/post regular market hours data
         # (optional, default is False)
@@ -38,5 +38,12 @@ data = yf.download(  # or pdr.get_data_yahoo(...
         proxy = None
     )
 
-MBB = yf.Ticker("MBB")
-print(MBB.info)
+# Clean data
+
+df_clean = data[[('EEM', 'Close'), ('AGG', 'Close'), ('SPY', 'Close')]]
+df_clean.reset_index(inplace=True)
+df_clean.columns=['Date', 'EEM', 'AGG', 'SPY']
+df_clean = df_clean.dropna()
+
+df_clean.to_csv('price_data_yf.csv', index=False)
+

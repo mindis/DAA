@@ -78,7 +78,7 @@ class Backtest:
 
     def run_sp500_benchmark(self):
         price_df = self.exchange.price_df.loc[self.portfolio.ds:self.end_dt]
-        spx_prices = price_df['SPX_Index']
+        spx_prices = price_df['SPY']
         initial_qty = self.start_cash / spx_prices[0]  # partial shares allowed
         benchmark_value = spx_prices * initial_qty
         return benchmark_value               
