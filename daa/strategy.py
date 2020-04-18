@@ -3,6 +3,12 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
+import pdb
+
+# TODO: separate strategies into other files
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import risk_models
+from pypfopt import expected_returns
 
 
 class Strategy(ABC):
@@ -126,4 +132,56 @@ class MomentumStrategy(Strategy):
         if min(target_dict.values()) < 0.0:
                raise ValueError("Security weight less than 0.")
                    
+        return target_dict
+
+
+class MinimumVarianceStrategy(Strategy):
+    def __init__(self, exchange, schedule, tickers):
+        super().__init__(exchange, schedule)
+
+        self.tickers = tickers
+
+        # TODO(baogorek): find solution to prices that don't change daily
+        good_data = exchange.price_df[tickers].loc['1996-01-01':]
+        self.returns = good_data.pct_change().dropna()
+
+    def compute_target_weights(self, portfolio):
+        pdb.set_trace()
+        target_dict = defaultdict(lambda: 0.)
+
+        Sigma = self.returns.loc[:portfolio.ds].cov().to_numpy()
+        e = np.ones(Sigma.shape[0])
+        Sigma_inv = np.linalg.inv(Sigma)
+
+        w = np.matmul(Sigma_inv, e) / np.matmul(e, np.matmul(Sigma_inv, e))
+        for ticker, weight in zip(self.tickers, w):
+            target_dict[ticker] = weight
+
+        return target_dict
+
+
+
+class MaxSharpeStrategy(Strategy):
+    def __init__(self, exchange, schedule, tickers, lookback):
+        super().__init__(exchange, schedule)
+
+        self.tickers = tickers
+        self.lookback = lookback 
+
+        self.prices = self.exchange.price_df[tickers].dropna().loc['1996-01-02':]
+
+    def compute_target_weights(self, portfolio):
+        target_dict = defaultdict(lambda: 0.)
+
+        prices = self.prices.reset_index()
+        current_i = prices[prices['Date'] == portfolio.ds].index.values[0]
+        local_df = prices.iloc[(current_i - self.lookback):current_i]
+        local_df.set_index('Date', inplace=True)
+
+        mu = expected_returns.mean_historical_return(local_df)
+        S = risk_models.sample_cov(local_df)
+
+        ef = EfficientFrontier(mu, S)
+        target_dict = ef.max_sharpe()
+
         return target_dict

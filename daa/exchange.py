@@ -13,6 +13,7 @@ class Exchange:
         price_df['lead_mmyyyy'] = price_df.mmyyyy.shift(-1)
         price_df['eobm'] = price_df.mmyyyy != price_df.lead_mmyyyy
         price_df.iloc[-1]['eobm'] = np.nan  # TODO:Need another way for last dt
+        price_df.drop(columns=['lead_mmyyyy'], inplace=True)
         price_df.set_index('Date', inplace=True)
         return price_df
 
@@ -21,3 +22,6 @@ class Exchange:
             raise KeyError("Try again: Ticker not found")
         price = float(self.price_df.loc[ds][ticker])
         return price
+
+    # TODO: (hallsj10) add SPY index to exchange to avoid naming errors in 
+    # in backtest.py
