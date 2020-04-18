@@ -5,6 +5,12 @@ import numpy as np
 import pandas as pd
 import pdb
 
+# TODO: separate strategies into other files
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import risk_models
+from pypfopt import expected_returns
+
+
 class Strategy(ABC):
     """An abstract class from which to create strategies as children"""
     def __init__(self, exchange, schedule):
@@ -155,20 +161,27 @@ class MinimumVarianceStrategy(Strategy):
 
 
 
+class MaxSharpeStrategy(Strategy):
+    def __init__(self, exchange, schedule, tickers, lookback):
+        super().__init__(exchange, schedule)
 
+        self.tickers = tickers
+        self.lookback = lookback 
 
+        self.prices = self.exchange.price_df[tickers].dropna().loc['1996-01-02':]
 
+    def compute_target_weights(self, portfolio):
+        target_dict = defaultdict(lambda: 0.)
 
+        prices = self.prices.reset_index()
+        current_i = prices[prices['Date'] == portfolio.ds].index.values[0]
+        local_df = prices.iloc[(current_i - self.lookback):current_i]
+        local_df.set_index('Date', inplace=True)
 
+        mu = expected_returns.mean_historical_return(local_df)
+        S = risk_models.sample_cov(local_df)
 
+        ef = EfficientFrontier(mu, S)
+        target_dict = ef.max_sharpe()
 
-
-
-
-
-
-
-
-
-
-
+        return target_dict
