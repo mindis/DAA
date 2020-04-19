@@ -23,7 +23,7 @@ data = yf.download(  # or pdr.get_data_yahoo(...
 
         # adjust all OHLC automatically
         # (optional, default is False)
-        auto_adjust = False,
+        auto_adjust = True,
 
         # download pre/post regular market hours data
         # (optional, default is False)
