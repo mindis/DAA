@@ -31,27 +31,30 @@ class MomentumStrategyTest(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'../data/ice_data_yf.csv'))
-        strategy = MomentumStrategy(exchange, schedule='D',
+        exchange = Exchange(os.path.join(cwd,'../data/price_data_yf.csv'))
+        strategy = MomentumStrategy(exchange, schedule='M',
                                     ticker_dict={'SPY': 1, 'AGG': 0},
                                     lookback=200)
 
-        backtest = Backtest(exchange, strategy, '1996-01-04', '2020-04-15')
+        backtest = Backtest(exchange, strategy, '2006-01-04', '2020-04-15')
         backtest.run()
 
         plt.style.use('fivethirtyeight')
 
         val_df = backtest.value_df.copy().reset_index()
-        ex_df = backtest.exchange.price_df.copy().reset_index()
-        ex_df['Cash'] = 1.0  # TODO: should we have inflation baked in?        
+        val_df.loc[val_df.Date == np.min(val_df.Date)]
 
+        ex_df = backtest.exchange.price_df.copy().reset_index()
+        ex_df = ex_df.loc[ex_df.Date >= backtest.start_dt] 
+        ex_df['Cash'] = 1.0  # TODO: should we have inflation baked in?        
+        # TODO(baogorek): For monthly scedule, first trade is day one. Don't wait
         tickers = list(set(val_df.ticker))
         for ticker in tickers:
             ticker_df = val_df.loc[val_df.ticker == ticker] 
 
             fig, ax = plt.subplots()
             ax.set_title(f'Portfolio Profile: {ticker}')
-            ax.set_ylim(0, 4)
+            ax.set_ylim(-.1, 4)
             ax.set_yticks([0, .25, .5, .75, 1])
             ax.set_ylabel(f'Weight of {ticker} in portfolio')
             ax.step(ticker_df['Date'], ticker_df['wgt'], color='green',

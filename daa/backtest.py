@@ -36,8 +36,9 @@ class Backtest:
 
     def plot_total_return(self):
         plt.plot(self.value_df.groupby('Date').sum()['value'],
-                 label = type(self.strategy).__name__)
-        plt.plot(self.sp500_benchmark, label = 'S&P500')
+                 label = type(self.strategy).__name__,
+                 linewidth=.8)
+        plt.plot(self.sp500_benchmark, label='S&P500', linewidth='.8')
         plt.legend()
         plt.title('Cumulative Growth of Initial Investment')
         plt.show()
