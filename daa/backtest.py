@@ -58,13 +58,13 @@ class Backtest:
                              index=['Ann. Returns', 'Ann. Vol', 'Sharpe',
                                     'Downside Vol', 'Sortino'])
 
-        inferred_freq = pd.infer_freq(returns.index)
-        if inferred_freq == 'B':
+        
+        if self.strategy.schedule == 'D':
             freq = 252
-        elif inferred_freq == 'M':
+        elif self.strategy.schedule == 'M':
             freq = 12
         else:
-            raise ValueError(f'We have not seen a freq like {inferred_freq}!')
+            raise ValueError(f'We have not seen a freq like {self.strategy.schedule}!')
        
         stats.iloc[0, :] = returns.mean().values * freq
         stats.iloc[1, :] = returns.std().values * sqrt(freq)
@@ -83,7 +83,6 @@ class Backtest:
         benchmark_value = spx_prices * initial_qty
         return benchmark_value               
        
-
     def run(self):
         """Runs strategy on portfolio until end_dt"""
         price_df = self.exchange.price_df.loc[self.portfolio.ds:self.end_dt]
@@ -112,3 +111,8 @@ class Backtest:
         print(f'backtest_finished. It is now {self.end_dt}')
         self.plot_total_return()
         print(self.calc_performance())
+
+v_df.reset_index(inplace=True)
+wgt_pivot = v_df.pivot(index='Date', columns='ticker', values='wgt')
+value_pivot2 = v_df.pivot(index='Date', columns='ticker', values='value')
+

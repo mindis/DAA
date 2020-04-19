@@ -35,8 +35,7 @@ class MomentumStrategyTest(unittest.TestCase):
         exchange = Exchange(os.path.join(cwd,'../data/price_data_yf.csv'))
         strategy = MomentumStrategy(exchange, 'D',
             {'SPY': 1, 'EEM': 1, 'AGG': 0}, 100)
-
-        backtest = Backtest(exchange, strategy, '1996-01-04', '2020-04-15')
+        backtest = Backtest(exchange, strategy, '2006-01-04', '2020-04-15')
         backtest.run()
 
 class MinimumVarianceStrategyTest(unittest.TestCase):
