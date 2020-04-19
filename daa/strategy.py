@@ -52,20 +52,20 @@ class Strategy(ABC):
         return shares_to_trade
 
 
-class BasicStrategy(Strategy):
-    def __init__(self, exchange, schedule):
+class Fixed_Weights(Strategy):
+    def __init__(self, exchange, schedule, ticker_dict):
         super().__init__(exchange, schedule)
-
+        
+        self.ticker_dict = ticker_dict
+        
     def compute_target_weights(self, portfolio):
-        target_dict = defaultdict(lambda: 0.)
-        target_dict['Cash'] = .25,
-        target_dict['SPX_Index'] = .25
-        target_dict['EAFE_Index'] = .25
-        target_dict['EM_Index'] =.50
+        
+        target_dict = self.ticker_dict
+        
         return target_dict
 
 
-class CAPEStrategy(Strategy):
+class CAPE(Strategy):
     def __init__(self, exchange, schedule):
         super().__init__(exchange, schedule)
 
@@ -99,8 +99,8 @@ class CAPEStrategy(Strategy):
         return target_dict
 
     
-class MomentumStrategy(Strategy):
-    """A momentum strategy based on moving average of len lookback"""
+class Trend_Following(Strategy):
+    """A trend following strategy based on moving average of len lookback"""
     def __init__(self, exchange, schedule, ticker_dict, lookback):
         super().__init__(exchange, schedule)
 
@@ -119,11 +119,15 @@ class MomentumStrategy(Strategy):
             price = self.exchange.get_price(portfolio.ds, ticker)
             if price > self.ma_df.loc[portfolio.ds, ticker]:
                 target_dict[ticker] = 1.0
+                for ticker in no_momos:
+                    target_dict[ticker] = 0.0
             else:
                 target_dict[ticker] = 0.0
         momo_sum = sum(target_dict.values())
         if momo_sum > 1.0: 
             target_dict.update((x, y / momo_sum) for x, y in target_dict.items())
+            for ticker in no_momos:
+                target_dict[ticker] = 0.0
         elif momo_sum == 0.0:
             for ticker in no_momos:
                 target_dict[ticker] = 1.0 / len(no_momos)
@@ -135,7 +139,7 @@ class MomentumStrategy(Strategy):
         return target_dict
 
 
-class MinimumVarianceStrategy(Strategy):
+class Minimum_Variance(Strategy):
     def __init__(self, exchange, schedule, tickers):
         super().__init__(exchange, schedule)
 
@@ -161,13 +165,12 @@ class MinimumVarianceStrategy(Strategy):
 
 
 
-class MaxSharpeStrategy(Strategy):
+class Max_Sharpe(Strategy):
     def __init__(self, exchange, schedule, tickers, lookback):
         super().__init__(exchange, schedule)
 
         self.tickers = tickers
-        self.lookback = lookback 
-
+        self.lookback = lookback
         self.prices = self.exchange.price_df[tickers].dropna().loc['1996-01-02':]
 
     def compute_target_weights(self, portfolio):

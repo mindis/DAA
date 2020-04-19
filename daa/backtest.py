@@ -15,7 +15,7 @@ register_matplotlib_converters()
 
 class Backtest:
     """Facilitates backtesting strategy on porfolio given exchange"""
-    def __init__(self, exchange, strategy, start_dt, end_dt, start_cash=1E6):
+    def __init__(self, exchange, strategy, start_dt, end_dt, start_cash=1E5):
         
         self.portfolio = Portfolio(start_dt, exchange, start_cash, 0)
         self.exchange = exchange
@@ -34,14 +34,35 @@ class Backtest:
         update.set_index('Date', inplace=True)
         self.value_df = pd.concat([self.value_df, update], sort=False)
 
-    def plot_total_return(self):
+    def plot_total_returns(self):
         plt.plot(self.value_df.groupby('Date').sum()['value'],
                  label = type(self.strategy).__name__,
                  linewidth=.8)
         plt.plot(self.sp500_benchmark, label='S&P500', linewidth='.8')
+        ax = plt.gca()
+        ax.get_yaxis().set_major_formatter(plt.FuncFormatter
+                                           (lambda x, 
+                                            loc: "{:,}".format(int(x))))
         plt.legend()
         plt.title('Cumulative Growth of Initial Investment')
         plt.show()
+        
+    def plot_weights(self):
+        tickers = list(set(self.value_df.ticker))
+        for ticker in tickers:
+            ticker_df = self.value_df.loc[self.value_df.ticker == ticker] 
+            fig, ax = plt.subplots()
+            ax.set_title(f'Portfolio Profile: {ticker}')
+            ax.set_ylim(-.1, 4)
+            ax.set_yticks([0, .25, .5, .75, 1])
+            ax.set_ylabel(f'Weight of {ticker} in Portfolio')
+            ax.step(ticker_df.index, ticker_df['wgt'], color='green',
+                    linewidth=.8)
+            ax2 = ax.twinx()
+            ax2.grid(b=False)
+            ax2.set_ylabel(f'Total Return Index: {ticker}')
+            ax2.plot(ticker_df.index, ticker_df.price, linewidth=.8)
+            
         
     def calc_performance(self):
         """ Calculate performance statistics
@@ -58,15 +79,7 @@ class Backtest:
                                         'Benchmark'],
                              index=['Ann. Returns', 'Ann. Vol', 'Sharpe',
                                     'Downside Vol', 'Sortino'])
-
-        
-        if self.strategy.schedule == 'D':
-            freq = 252
-        elif self.strategy.schedule == 'M':
-            freq = 12
-        else:
-            raise ValueError(f'We have not seen a freq like {self.strategy.schedule}!')
-       
+        freq = 252
         stats.iloc[0, :] = returns.mean().values * freq
         stats.iloc[1, :] = returns.std().values * sqrt(freq)
         stats.iloc[2, :] = ((returns.mean().values*freq)
@@ -110,11 +123,7 @@ class Backtest:
         
         pbar.close()
         print(f'backtest_finished. It is now {self.end_dt}')
-        self.plot_total_return()
+        self.plot_total_returns()
+        self.plot_weights()
         print(self.calc_performance())
-
-# TODO (baogorek): find a place for this
-#v_df.reset_index(inplace=True)
-#wgt_pivot = v_df.pivot(index='Date', columns='ticker', values='wgt')
-#value_pivot2 = v_df.pivot(index='Date', columns='ticker', values='value')
 

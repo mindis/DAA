@@ -5,12 +5,12 @@ import yfinance as yf
 
 data = yf.download(  # or pdr.get_data_yahoo(...
         # tickers list or string as well
-        tickers = "SPY EEM AGG",
+        tickers = "SPY VLUE QUAL SIZE USMV MTUM",
 
         # use "period" instead of start/end
         # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
         # (optional, default is '1mo')
-        period = "max",
+        period = "10y",
 
         # fetch data by interval (including intraday if period < 60 days)
         # valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
@@ -39,11 +39,11 @@ data = yf.download(  # or pdr.get_data_yahoo(...
     )
 
 # Clean data
-
-df_clean = data[[('EEM', 'Close'), ('AGG', 'Close'), ('SPY', 'Close')]]
+df_clean = data[[('SPY', 'Close'), ('VLUE', 'Close'), ('QUAL', 'Close'), 
+                ('SIZE', 'Close'), ('USMV', 'Close'), ('MTUM', 'Close')]]
 df_clean.reset_index(inplace=True)
-df_clean.columns=['Date', 'EEM', 'AGG', 'SPY']
+df_clean.columns=['Date', 'SPY', 'VLUE', 'QUAL', 'SIZE', 'USMV', 'MTUM']
 df_clean = df_clean.dropna()
 
-df_clean.to_csv('price_data_yf.csv', index=False)
+df_clean.to_csv('price_data_equity_factors.csv', index=False)
 

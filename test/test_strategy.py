@@ -7,15 +7,15 @@ from daa.portfolio import *
 from daa.exchange import *
 from daa.backtest import *
 
-class StrategyTest(unittest.TestCase):
+class FixedWeightStrategy(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
         exchange = Exchange(os.path.join(cwd,'../data/price_data_yf.csv'))
-        strategy = BasicStrategy(exchange, 'M')
-        backtest = Backtest(exchange, strategy, '1999-04-04', '20-12-31')
+        strategy = Fixed_Weights(exchange, 'M', 
+                                 ticker_dict={'SPY': 0.70, 'AGG': 0.30})
+        backtest = Backtest(exchange, strategy, '2005-01-02', '2020-04-15')
         backtest.run()
-
 
 class CAPEStrategyTest(unittest.TestCase):
 
@@ -36,33 +36,8 @@ class MomentumStrategyTest(unittest.TestCase):
                                     ticker_dict={'SPY': 1, 'AGG': 0},
                                     lookback=200)
 
-        backtest = Backtest(exchange, strategy, '2006-01-04', '2020-04-15')
-        backtest.run()
-
-        plt.style.use('fivethirtyeight')
-
-        val_df = backtest.value_df.copy().reset_index()
-        val_df.loc[val_df.Date == np.min(val_df.Date)]
-
-        ex_df = backtest.exchange.price_df.copy().reset_index()
-        ex_df = ex_df.loc[ex_df.Date >= backtest.start_dt] 
-        ex_df['Cash'] = 1.0  # TODO: should we have inflation baked in?        
-        # TODO(baogorek): For monthly scedule, first trade is day one. Don't wait
-        tickers = list(set(val_df.ticker))
-        for ticker in tickers:
-            ticker_df = val_df.loc[val_df.ticker == ticker] 
-
-            fig, ax = plt.subplots()
-            ax.set_title(f'Portfolio Profile: {ticker}')
-            ax.set_ylim(-.1, 4)
-            ax.set_yticks([0, .25, .5, .75, 1])
-            ax.set_ylabel(f'Weight of {ticker} in portfolio')
-            ax.step(ticker_df['Date'], ticker_df['wgt'], color='green',
-                    linewidth=.8)
-            ax2 = ax.twinx()
-            ax2.grid(b=False)
-            ax2.set_ylabel(f'Total Returns Price of {ticker}')
-            ax2.plot(ex_df['Date'], ex_df[ticker], linewidth=.8)
+        backtest = Backtest(exchange, strategy, '2005-01-02', '2020-04-15')
+        backtest.run()      
 
 class MinimumVarianceStrategyTest(unittest.TestCase):
 
@@ -79,12 +54,10 @@ class MaxSharpeStrategyTest(unittest.TestCase):
 
     def setUp(self):
         cwd = 'test'
-        exchange = Exchange(os.path.join(cwd,'../data/PriceData.csv'))
-
-        strategy = MaxSharpeStrategy(exchange, 'M',
-         ['SPX_Index', 'EM_Index', 'Large_Value_Index', 'AGG_Index'], 252)
-
-        backtest = Backtest(exchange, strategy, '1998-01-04', '2018-10-30')
+        exchange = Exchange(os.path.join(cwd,'../data/price_data_ef.csv'))
+        strategy = Max_Sharpe(exchange, 'M',
+         ['VLUE', 'QUAL', 'SIZE', 'USMV', 'MTUM'], 252)
+        backtest = Backtest(exchange, strategy, '2015-01-02', '2020-04-15')
         backtest.run()
 
 if __name__ == '__main__':

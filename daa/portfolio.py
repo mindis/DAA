@@ -75,7 +75,7 @@ class Portfolio:
                     print(self.get_positions_df())
                     print(f"Couldn't buy {quantity} of {ticker} on {self.ds}")
                     print(f"Tried to buy {total_value}s worth with {self.cash_balance}")
-                    raise ValueError('Not enough shares!')
+                    raise ValueError('Not enough cash!')
 
                 self.trade_id += 1
                 self.cash_balance -= total_value 
@@ -86,6 +86,7 @@ class Portfolio:
 
             elif side == 'sell':
                 if quantity > self.get_positions_df().loc[ticker,'quantity']:
+                    print(f"Tried to sell {quantity} of {ticker}!")
                     raise ValueError('Not enough shares!')
                 self.trade_id += 1
                 self.cash_balance += total_value
