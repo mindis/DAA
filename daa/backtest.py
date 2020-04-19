@@ -112,7 +112,8 @@ class Backtest:
         self.plot_total_return()
         print(self.calc_performance())
 
-v_df.reset_index(inplace=True)
-wgt_pivot = v_df.pivot(index='Date', columns='ticker', values='wgt')
-value_pivot2 = v_df.pivot(index='Date', columns='ticker', values='value')
+# TODO (baogorek): find a place for this
+#v_df.reset_index(inplace=True)
+#wgt_pivot = v_df.pivot(index='Date', columns='ticker', values='wgt')
+#value_pivot2 = v_df.pivot(index='Date', columns='ticker', values='value')
 
